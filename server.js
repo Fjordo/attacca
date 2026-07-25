@@ -196,6 +196,9 @@ function sanitizeEvent(input, existing = null) {
   if (typeof input.note === "string") out.note = input.note.trim().slice(0, 2000);
   if (Array.isArray(input.songs)) {
     out.songs = input.songs
+      // Un `null` in mezzo alla lista faceva esplodere il .map qui sotto e
+      // rispondere 500: le righe che non sono oggetti si scartano e basta.
+      .filter((s) => s && typeof s === "object")
       .map((s) => ({
         id: typeof s.id === "string" && s.id ? s.id.slice(0, 20) : newId(6),
         title: (typeof s.title === "string" ? s.title : "").trim().slice(0, 300),

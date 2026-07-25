@@ -264,6 +264,35 @@ describe("giro completo di un evento", () => {
     expect(ev.date).toBe("");
     expect(ev.songs).toHaveLength(1);
   });
+
+  it("non va in crash su una lista di brani malformata", async () => {
+    const cookie = await login(ip);
+    const r = await call("/api/events", {
+      metodo: "POST",
+      corpo: {
+        name: "Malformato",
+        songs: [null, 42, "una stringa", [], { videoId: "Z2MeQJCGjLo" }],
+      },
+      cookie,
+      ip,
+    });
+    expect(r.status).toBe(201);
+    expect((await r.json()).songs).toHaveLength(1); // resta solo quello valido
+  });
+
+  it("regge campi del tipo sbagliato senza rispondere 500", async () => {
+    const cookie = await login(ip);
+    const r = await call("/api/events", {
+      metodo: "POST",
+      corpo: { name: { non: "una stringa" }, date: 42, place: [], note: true, songs: "nemmeno" },
+      cookie,
+      ip,
+    });
+    expect(r.status).toBe(201);
+    const ev = await r.json();
+    expect(typeof ev.name).toBe("string");
+    expect(ev.songs).toEqual([]);
+  });
 });
 
 // Ultimo: lascia il proprio IP bloccato, e il blocco dura più della suite.
