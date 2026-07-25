@@ -136,6 +136,14 @@ describe("login", () => {
     expect(cookie).toContain("Secure"); // NODE_ENV=production
   });
 
+  // Il token è firmato, non registrato da nessuna parte: non si può revocare.
+  // La durata è quindi l'unico limite alla finestra in cui una copia vale
+  // ancora, ed è una decisione, non un dettaglio.
+  it("la sessione dura un'ora, non di più", async () => {
+    const r = await call("/api/login", { metodo: "POST", corpo: { password: PWD }, ip });
+    expect(r.headers.getSetCookie()[0]).toContain("Max-Age=3600");
+  });
+
   it("la sessione appena aperta vale", async () => {
     const cookie = await login(ip);
     expect((await call("/api/session", { cookie, ip })).status).toBe(200);

@@ -112,7 +112,7 @@ privilegi ed esegue il `CMD`.
 ## Come funziona l'accesso admin
 
 La password si inserisce una volta sola, su `/admin`. In cambio il server manda un
-cookie di sessione `HttpOnly` che dura 12 ore: il JavaScript della pagina non può
+cookie di sessione `HttpOnly` che dura un'ora: il JavaScript della pagina non può
 leggerlo e la password non viene conservata dal browser. *Esci* chiude la sessione
 subito; cambiare `ADMIN_PASSWORD` invalida da sé tutte quelle ancora aperte.
 

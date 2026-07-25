@@ -82,7 +82,12 @@ function safeEqual(a, b) {
 // password invalida da sola tutte le sessioni aperte.
 const IS_PROD = process.env.NODE_ENV === "production";
 const SESSION_COOKIE = "attacca_session";
-const SESSION_MS = 12 * 60 * 60 * 1000; // 12 ore
+// Un'ora. Il token non è revocabile — è firmato, non registrato da nessuna
+// parte — quindi la finestra in cui una copia rubata vale ancora è tutta qui:
+// tenerla corta è l'unica leva che abbiamo. Se scade mentre stai lavorando,
+// l'editor non perde niente: torna il lucchetto e dopo il login ritrovi la
+// scaletta dov'era.
+const SESSION_MS = 60 * 60 * 1000;
 // La chiave si deriva con scrypt e non con un SHA-256 secco. Un token è
 // pubblico quanto il portatile su cui sta — HttpOnly lo nasconde al
 // JavaScript, non ai DevTools — e chi ne ha uno può provare password offline,
