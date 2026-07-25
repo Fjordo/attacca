@@ -13,12 +13,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8080;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "events.json");
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "cambiami";
+// Niente password di ripiego: una costante scritta qui sarebbe pubblica quanto
+// il repository, e un avviso a console in produzione non lo legge nessuno.
+// In produzione si esce; in sviluppo se ne genera una a caso e la si stampa.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || devPassword();
 
-if (!process.env.ADMIN_PASSWORD) {
-  console.warn(
-    "\n⚠  ADMIN_PASSWORD non impostata: uso 'cambiami'. Impostala prima di andare in produzione.\n"
-  );
+function devPassword() {
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "\n✖  ADMIN_PASSWORD non impostata. In produzione è obbligatoria:\n" +
+        "   fly secrets set ADMIN_PASSWORD=\"...\"\n"
+    );
+    process.exit(1);
+  }
+  const pwd = crypto.randomBytes(9).toString("base64url");
+  console.warn(`\n⚠  ADMIN_PASSWORD non impostata. Password di questa sessione: ${pwd}\n`);
+  return pwd;
 }
 
 // ---- Storage su file (semplice, atomico) ---------------------------------

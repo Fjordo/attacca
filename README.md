@@ -56,6 +56,10 @@ ADMIN_PASSWORD="la-tua-password" npm start
 # apri http://localhost:8080  (admin: http://localhost:8080/admin)
 ```
 
+Se lanci senza `ADMIN_PASSWORD`, in sviluppo il server ne genera una a caso e la
+stampa all'avvio. In produzione (`NODE_ENV=production`, come nel Dockerfile) la
+variabile è obbligatoria: senza, il server si rifiuta di partire.
+
 ## Test
 
 ```bash
