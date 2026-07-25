@@ -1,6 +1,6 @@
 # Node 20 ha chiuso la manutenzione ad aprile 2026: da lì non riceve più patch
 # di sicurezza. La 22 è LTS fino ad aprile 2027.
-FROM node:22-slim
+FROM node:26-slim
 
 WORKDIR /app
 
