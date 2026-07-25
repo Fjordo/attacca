@@ -1,0 +1,11 @@
+{
+  "name": "Prova soundcheck",
+  "date": "2026-07-25",
+  "place": "Sala prove",
+  "note": "Esempio di lista importabile da Admin › 'Carica lista da file'.",
+  "songs": [
+    { "title": "", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    { "title": "", "url": "https://youtu.be/9bZkp7q19f0" },
+    { "title": "", "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk&t=30s" }
+  ]
+}

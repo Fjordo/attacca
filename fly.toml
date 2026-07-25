@@ -1,0 +1,29 @@
+# Configurazione Fly.io.
+# Cambia "app" con un nome unico prima del deploy (o lascia che 'fly launch' lo generi).
+app = "attacca"
+primary_region = "cdg"   # Parigi. Vedi le regioni con: fly platform regions
+
+# Swap: la VM ha solo 256 MB, questo evita che un picco faccia scattare l'OOM killer.
+swap_size_mb = 512
+
+[build]
+
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+
+# Volume persistente: qui vive events.json, così i dati sopravvivono ai deploy.
+[[mounts]]
+  source = "attacca_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

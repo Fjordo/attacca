@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Attacca</title>
+  <meta name="description" content="La scaletta della band: riproduci la lista di brani YouTube in sequenza, senza interruzioni." />
+  <meta name="theme-color" content="#161311" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark"></span><b>Attacca</b></a>
+    <span class="spacer"></span>
+    <a class="btn ghost small" href="/admin">Admin</a>
+  </header>
+
+  <!-- ============ HOME ============ -->
+  <main id="home" class="wrap" hidden>
+    <section class="hero">
+      <p class="kicker">Studia la scaletta</p>
+      <h1>Metti<br />in fila<br />i pezzi.</h1>
+      <p class="sub">Apri un evento: i brani partono in sequenza, uno dopo l'altro, senza toccare nulla. Una volta caricato, tutto gira nel tuo telefono.</p>
+      <div class="actions">
+        <a class="btn primary" href="/admin">Crea / ordina scaletta</a>
+      </div>
+    </section>
+
+    <div class="section-label">Eventi</div>
+    <div id="eventList" class="events"></div>
+  </main>
+
+  <!-- ============ PLAYER ============ -->
+  <main id="player" class="wrap" hidden>
+    <div class="player-grid">
+      <!-- Colonna palco: schermo + trasporto -->
+      <div>
+        <div class="stage">
+          <div class="screen">
+            <div id="yt"></div>
+            <div class="placeholder" id="screenPlaceholder">
+              <p class="kicker">Pronti</p>
+              <button class="btn primary" id="btnStart">▶ Avvia scaletta</button>
+              <p style="font-size:13px;max-width:34ch">La riproduzione parte al primo tocco (regole del browser). Poi va da sola.</p>
+            </div>
+          </div>
+
+          <div class="progress">
+            <span class="t" id="timeCur">0:00</span>
+            <input type="range" class="seek" id="seek" min="0" max="0" step="0.1" value="0"
+                   disabled aria-label="Posizione nel brano" />
+            <span class="t" id="timeDur">0:00</span>
+          </div>
+
+          <div class="transport">
+            <button class="iconbtn" id="btnPrev" title="Precedente" aria-label="Brano precedente">⏮</button>
+            <button class="play" id="btnPlay" title="Play/Pausa" aria-label="Play o pausa">
+              <span id="playGlyph">▶</span>
+            </button>
+            <button class="iconbtn" id="btnNext" title="Successivo" aria-label="Brano successivo">⏭</button>
+            <div class="now">
+              <div class="n-title" id="nowTitle">—</div>
+              <div class="n-sub" id="nowSub"></div>
+            </div>
+          </div>
+
+          <div class="autoplay-row">
+            <label class="switch">
+              <input type="checkbox" id="autoplayToggle" checked />
+              <span class="track"></span>
+              <span>Riproduzione continua</span>
+            </label>
+            <span id="netState"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonna scaletta -->
+      <div>
+        <div class="banner" id="offlineBanner">Sei offline: la lista è quella salvata. Per riprodurre i video serve la rete.</div>
+        <div class="setlist-head">
+          <div>
+            <p class="kicker" id="evDate"></p>
+            <h2 id="evName">Scaletta</h2>
+          </div>
+          <span class="count" id="evCount"></span>
+        </div>
+        <ol class="setlist" id="setlist"></ol>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:40px">
+          <a class="btn wa" id="btnShare" href="#" target="_blank" rel="noopener">Condividi su WhatsApp</a>
+          <a class="btn ghost" href="/">← Tutti gli eventi</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <p class="foot">Attacca · setlist della band · Made by Fjordo</p>
+
+  <script src="/js/player.js" type="module"></script>
+  <script>
+    // Registra il service worker per l'uso offline (app shell + font + icone).
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>

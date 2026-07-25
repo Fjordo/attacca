@@ -1,0 +1,22 @@
+{
+  "name": "attacca",
+  "version": "1.0.0",
+  "description": "App web per far studiare e riprodurre la scaletta a una band. Playlist YouTube in sequenza, riproduzione continua lato client, condivisione via WhatsApp.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.22.2"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.10"
+  }
+}
