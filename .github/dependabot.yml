@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # Dipendenze npm (express, vitest, jsdom, ...)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "06:00"
+      timezone: "Europe/Rome"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # Un'unica PR per tutti gli aggiornamenti minor/patch: meno rumore.
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Immagine base del Dockerfile (node:20-slim)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "06:00"
+      timezone: "Europe/Rome"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(docker)"
