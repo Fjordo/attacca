@@ -6,6 +6,7 @@
   <title>Admin · Attacca</title>
   <meta name="theme-color" content="#161311" />
   <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
@@ -18,73 +19,77 @@
   <!-- Blocco password -->
   <section id="lock" class="lock" hidden>
     <div class="mark-lg"></div>
-    <h1 style="font-size:34px">Area riservata</h1>
-    <p style="color:var(--muted)">Inserisci la password per gestire le scalette.</p>
+    <h1>Area riservata</h1>
+    <p class="lead">Inserisci la password per gestire le scalette.</p>
     <form id="lockForm">
       <div class="field">
         <label for="pwd">Password</label>
         <input type="password" id="pwd" autocomplete="current-password" autofocus />
       </div>
-      <button class="btn primary" style="width:100%" type="submit">Entra</button>
+      <button class="btn primary" type="submit">Entra</button>
     </form>
   </section>
 
-  <!-- Editor -->
+  <!-- Editor. Sul telefono si vede una schermata alla volta: data-pane dice
+       quale. Da 900px in su le due colonne convivono e l'attributo non conta. -->
   <main id="admin" class="wrap" hidden>
-    <div class="admin-grid">
+    <div class="admin-grid" id="adminGrid" data-pane="list">
       <!-- Elenco eventi + nuovo -->
-      <aside class="panel">
+      <aside class="panel pane-list">
         <h3>Eventi</h3>
-        <button class="btn primary small" id="btnNew" style="width:100%;margin-bottom:8px">+ Nuovo evento</button>
-        <button class="btn small" id="btnImport" style="width:100%;margin-bottom:12px">Carica lista da file</button>
+        <button type="button" class="btn primary small" id="btnNew">+ Nuovo evento</button>
+        <button type="button" class="btn small" id="btnImport">Carica lista da file</button>
         <input type="file" id="fileInput" accept="application/json,.json" hidden />
         <ul class="evlist" id="evList"></ul>
       </aside>
 
       <!-- Form -->
-      <section class="panel editor" id="editor" hidden>
-        <div class="field">
-          <label for="fName">Nome evento</label>
-          <input type="text" id="fName" placeholder="Es. Live @ Circolo, sabato" />
-        </div>
+      <div class="pane-editor">
+        <button type="button" class="btn ghost small backlink" id="btnBack">← Eventi</button>
 
-        <div class="row2">
-          <div class="field" style="margin:0">
-            <label for="fDate">Data</label>
-            <input type="date" id="fDate" />
+        <section class="panel editor" id="editor" hidden>
+          <div class="field">
+            <label for="fName">Nome evento</label>
+            <input type="text" id="fName" placeholder="Es. Live @ Circolo, sabato" />
           </div>
-          <div class="field" style="margin:0">
-            <label for="fPlace">Luogo</label>
-            <input type="text" id="fPlace" placeholder="Es. Bettona" />
+
+          <div class="row2">
+            <div class="field">
+              <label for="fDate">Data</label>
+              <input type="date" id="fDate" />
+            </div>
+            <div class="field">
+              <label for="fPlace">Luogo</label>
+              <input type="text" id="fPlace" placeholder="Es. Bettona" />
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="fNote">Note (facoltative)</label>
-          <textarea id="fNote" placeholder="Accordatura, cambi palco, ecc."></textarea>
-        </div>
+          <div class="field">
+            <label for="fNote">Note (facoltative)</label>
+            <textarea id="fNote" placeholder="Accordatura, cambi palco, ecc."></textarea>
+          </div>
 
-        <div class="section-label" style="margin-top:8px">Brani · trascina o usa le frecce</div>
-        <div class="adder">
-          <input type="url" id="fUrl" placeholder="Incolla un link YouTube e premi +" />
-          <button class="btn primary" id="btnAdd" title="Aggiungi brano">+</button>
-        </div>
-        <ul class="slist" id="songList"></ul>
+          <div class="section-label">Brani</div>
+          <div class="adder">
+            <input type="url" id="fUrl" placeholder="Incolla un link YouTube" />
+            <button type="button" class="btn primary" id="btnAdd" title="Aggiungi brano" aria-label="Aggiungi brano">+</button>
+          </div>
+          <ul class="slist" id="songList"></ul>
 
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:20px">
-          <button class="btn primary" id="btnSave">Salva</button>
-          <a class="btn" id="btnPreview" target="_blank" rel="noopener">Anteprima</a>
-          <button class="btn wa" id="btnWa">Condividi su WhatsApp</button>
-          <button class="btn ghost" id="btnExport">Esporta JSON</button>
-          <span class="spacer" style="flex:1"></span>
-          <button class="btn danger" id="btnDelete">Elimina</button>
-        </div>
-        <p id="savedHint" class="foot" style="text-align:left;padding:14px 0 0"></p>
-      </section>
+          <div class="editor-actions">
+            <button type="button" class="btn primary wide" id="btnSave">Salva</button>
+            <button type="button" class="btn wa wide" id="btnWa">Condividi su WhatsApp</button>
+            <a class="btn" id="btnPreview" target="_blank" rel="noopener">Anteprima</a>
+            <button type="button" class="btn ghost" id="btnExport">Esporta JSON</button>
+            <button type="button" class="btn danger apart" id="btnDelete">Elimina evento</button>
+          </div>
+          <p id="savedHint" class="saved-hint"></p>
+        </section>
 
-      <section class="panel" id="editorEmpty">
-        <p style="color:var(--muted);margin:0">Scegli un evento a sinistra o creane uno nuovo per iniziare.</p>
-      </section>
+        <section class="panel" id="editorEmpty">
+          <p class="note">Scegli un evento dall'elenco o creane uno nuovo per iniziare.</p>
+        </section>
+      </div>
     </div>
   </main>
 

@@ -1,6 +1,12 @@
 /* ============================================================
-   SCALETTA — "la lista sotto le luci del palco"
+   ATTACCA — "la lista sotto le luci del palco"
    Palette backstage + luce tungsten ambra sul brano in corso.
+
+   Mobile first: le regole di base descrivono il telefono (schermo
+   stretto, dito, una colonna). Gli schermi grandi arrivano dopo,
+   in fondo al file, con i soli @media (min-width: …). Le regole
+   di hover stanno in @media (hover: hover): sul touch l'hover
+   resta "appiccicato" dopo il tocco e la riga sembra selezionata.
    ============================================================ */
 
 @font-face {
@@ -23,7 +29,7 @@
 
   --stage: #161311;   /* fondo backstage, near-black caldo */
   --riser: #1f1b18;   /* pannelli sollevati */
-  --riser2: #262019;  /* hover / campi */
+  --riser2: #262019;  /* pressione / campi */
   --line: #342d26;    /* hairline */
   --ink: #f3ece2;     /* testo caldo */
   --muted: #9a8e82;   /* metadati */
@@ -38,15 +44,39 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 
   --radius: 12px;
-  --pad: clamp(16px, 4vw, 28px);
+  --pad: 16px;
+
+  /* Notch e barra home: il viewport è "viewport-fit=cover", quindi i bordi
+     dello schermo sono nostri e dobbiamo starne fuori a mano. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  /* Bersaglio minimo per il dito. Sotto questa misura si sbaglia il tocco. */
+  --tap: 44px;
+
+  /* Altezza della barra comandi fissa in basso, nota al resto del layout:
+     la scaletta ci lascia spazio sotto e il toast le sale sopra. */
+  --deck-h: calc(120px + var(--safe-b));
+  --top-h: calc(54px + var(--safe-t));
 }
 
 * { box-sizing: border-box; }
 
-html, body { height: 100%; }
+html {
+  /* Margini per scrollIntoView: senza questi il brano attivo finisce dietro la
+     topbar appiccicata o sotto il deck fisso. */
+  scroll-padding-top: calc(var(--top-h) + 12px);
+  scroll-padding-bottom: calc(var(--deck-h) + 16px);
+  /* iOS ingrandisce il testo ruotando in orizzontale: qui non lo vogliamo. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
+  min-height: 100dvh;
   background: var(--stage);
   color: var(--ink);
   font-family: var(--body);
@@ -55,18 +85,25 @@ body {
   -webkit-font-smoothing: antialiased;
   /* leggera texture di "luci lontane" in alto */
   background-image:
-    radial-gradient(120% 80% at 50% -20%, rgba(255, 176, 32, 0.08), transparent 60%);
+    radial-gradient(140% 70% at 50% -10%, rgba(255, 176, 32, 0.08), transparent 60%);
   background-attachment: fixed;
 }
 
 a { color: inherit; }
+
+/* Niente lampo grigio al tocco e niente attesa di 300ms sui comandi. */
+a, button, label, summary, .song, .event-card {
+  -webkit-tap-highlight-color: transparent;
+}
+button, .btn, .iconbtn, .song, .event-card { touch-action: manipulation; }
+
 button { font-family: inherit; }
 
 /* ---- Tipografia display -------------------------------------------------- */
 .kicker {
   font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.22em;
+  font-size: 11px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--tungsten);
 }
@@ -80,111 +117,160 @@ h1, h2, .display {
 }
 
 /* ---- Layout di base ------------------------------------------------------ */
-.wrap { max-width: 1040px; margin: 0 auto; padding: 0 var(--pad); }
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: calc(var(--pad) + var(--safe-l));
+  padding-right: calc(var(--pad) + var(--safe-r));
+}
 
 .topbar {
   position: sticky; top: 0; z-index: 40;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  padding: 14px var(--pad);
-  background: rgba(22, 19, 17, 0.82);
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--top-h);
+  padding:
+    calc(10px + var(--safe-t))
+    calc(var(--pad) + var(--safe-r))
+    10px
+    calc(var(--pad) + var(--safe-l));
+  background: rgba(22, 19, 17, 0.86);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+  min-height: var(--tap); /* il logo è anche il "torna alla home" */
+}
 .brand .mark {
-  width: 22px; height: 22px; border-radius: 3px;
+  width: 20px; height: 20px; border-radius: 3px;
   background: var(--tungsten);
   box-shadow: 0 0 18px 2px rgba(255, 176, 32, 0.55);
   flex: 0 0 auto;
 }
 .brand b {
-  font-family: var(--display); font-weight: 700; font-size: 22px;
+  font-family: var(--display); font-weight: 700; font-size: 21px;
   letter-spacing: 0.14em; text-transform: uppercase;
 }
 .topbar .spacer { flex: 1; }
 
 /* ---- Bottoni ------------------------------------------------------------- */
+/* Sul telefono ogni bottone è alto almeno --tap: è la regola, non l'eccezione. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 11px 16px; border-radius: 10px;
+  min-height: var(--tap);
+  padding: 10px 16px; border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--riser); color: var(--ink);
   font-size: 15px; font-weight: 600; cursor: pointer;
-  text-decoration: none; transition: background .15s, border-color .15s, transform .05s;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, transform .05s;
 }
-.btn:hover { background: var(--riser2); }
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: translateY(1px); background: var(--riser2); }
 .btn.primary { background: var(--tungsten); color: #221a08; border-color: transparent; }
-.btn.primary:hover { filter: brightness(1.05); background: var(--tungsten); }
+.btn.primary:active { background: var(--tungsten); filter: brightness(.94); }
 .btn.ghost { background: transparent; }
 .btn.wa { background: #25d366; color: #06331b; border-color: transparent; }
-.btn.wa:hover { filter: brightness(1.03); background: #25d366; }
-.btn.danger { color: var(--red); border-color: rgba(229,72,77,.35); background: transparent; }
-.btn.danger:hover { background: rgba(229,72,77,.1); }
-.btn.small { padding: 7px 11px; font-size: 13px; border-radius: 8px; }
-.btn.icon { padding: 8px; width: 38px; height: 38px; }
+.btn.danger { color: var(--red); border-color: rgba(229, 72, 77, .35); background: transparent; }
+.btn.danger:active { background: rgba(229, 72, 77, .12); }
+/* "small" rimpicciolisce il testo, non il bersaglio. */
+.btn.small { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .iconbtn {
-  display:inline-flex; align-items:center; justify-content:center;
-  width: 44px; height: 44px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--tap); height: var(--tap); border-radius: 999px;
   border: 1px solid var(--line); background: var(--riser); color: var(--ink);
-  cursor: pointer;
+  font-size: 17px; cursor: pointer;
 }
-.iconbtn:hover { background: var(--riser2); }
+.iconbtn:active { background: var(--riser2); transform: translateY(1px); }
+
+/* ---- Campi --------------------------------------------------------------- */
+.field { display: block; margin: 14px 0; text-align: left; }
+.field label {
+  display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+}
+/* input:not([type]) c'è perché il campo del titolo brano non dichiara un type:
+   senza questo restava col vestito di serie del browser, quadrato e chiaro. */
+input[type="text"], input[type="password"], input[type="date"], input[type="url"],
+input:not([type]), textarea, select {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 11px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--riser); color: var(--ink);
+  font-family: var(--body);
+  /* 16px esatti: sotto questa misura Safari su iOS zooma la pagina a ogni
+     tocco sul campo e l'utente resta lì a rimpicciolire a mano. */
+  font-size: 16px;
+}
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--tungsten); outline-offset: 1px; border-color: transparent;
+}
+textarea { resize: vertical; min-height: 72px; }
 
 /* ---- Home ---------------------------------------------------------------- */
-.hero { padding: clamp(28px, 7vw, 64px) 0 22px; }
-.hero h1 { font-size: clamp(52px, 15vw, 128px); }
-.hero .sub { color: var(--muted); max-width: 46ch; margin-top: 14px; font-size: 17px; }
-.hero .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+/* L'obiettivo della home sul telefono è la lista eventi: il titolo la
+   annuncia, non le ruba lo schermo. */
+.hero { padding: 26px 0 18px; }
+.hero h1 { font-size: 46px; }
+.hero .sub {
+  color: var(--muted); max-width: 34ch; margin-top: 12px;
+  font-size: 15px; line-height: 1.45;
+}
+.hero .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.hero .actions .btn { flex: 1 1 auto; }
 
 .section-label {
-  display:flex; align-items:center; gap: 12px;
-  margin: 34px 0 14px; color: var(--muted);
-  font-family: var(--mono); font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 12px;
+  margin: 26px 0 12px; color: var(--muted);
+  font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
 }
-.section-label::after { content:""; flex:1; height:1px; background: var(--line); }
+.section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-.events { display: grid; gap: 12px; grid-template-columns: 1fr; padding-bottom: 60px; }
-@media (min-width: 720px) { .events { grid-template-columns: 1fr 1fr; } }
+.events { display: grid; gap: 10px; grid-template-columns: 1fr; padding-bottom: 40px; }
 
 .event-card {
-  display: flex; align-items: center; gap: 16px;
-  padding: 18px; border: 1px solid var(--line); border-radius: var(--radius);
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; border: 1px solid var(--line); border-radius: var(--radius);
   background: var(--riser); text-decoration: none; color: inherit;
   transition: border-color .15s, transform .08s, background .15s;
 }
-.event-card:hover { border-color: rgba(255,176,32,.4); background: var(--riser2); transform: translateY(-1px); }
+.event-card:active { background: var(--riser2); transform: translateY(1px); }
 .event-card .big {
-  font-family: var(--display); font-weight: 700; font-size: 34px; color: var(--tungsten);
-  line-height: 1; min-width: 46px; text-align: right; font-variant-numeric: tabular-nums;
+  font-family: var(--display); font-weight: 700; font-size: 32px; color: var(--tungsten);
+  line-height: 1; min-width: 42px; text-align: right; font-variant-numeric: tabular-nums;
 }
 .event-card .meta { flex: 1; min-width: 0; }
 .event-card .meta .name {
   font-family: var(--display); font-weight: 700; text-transform: uppercase;
-  font-size: 22px; line-height: 1; letter-spacing: .01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 21px; line-height: 1.05; letter-spacing: .01em;
+  /* Sul telefono i nomi lunghi vanno a capo una volta invece di sparire. */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.event-card .meta .info { color: var(--muted); font-size: 13px; margin-top: 6px; font-family: var(--mono); }
+.event-card .meta .info {
+  color: var(--muted); font-size: 12px; margin-top: 5px; font-family: var(--mono);
+}
 
 .empty {
   border: 1px dashed var(--line); border-radius: var(--radius);
-  padding: 30px; text-align: center; color: var(--muted);
+  padding: 26px 20px; text-align: center; color: var(--muted); font-size: 15px;
 }
+.empty a { color: var(--tungsten); }
 
-/* ---- Player -------------------------------------------------------------- */
-.player-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
-@media (min-width: 940px) {
-  .player-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-}
+/* ---- Player: lo schermo -------------------------------------------------- */
+.player-grid { display: grid; grid-template-columns: 1fr; }
 
+/* Sul telefono il video scorre via con la pagina: l'unica cosa fissa è il deck,
+   in basso. Tenere agganciati sia il video sia i comandi vorrebbe dire due terzi
+   di schermo occupati e tre brani visibili su trentotto — e il deck dice già
+   cosa sta suonando. Da 940px in su il video torna appiccicato: là c'è posto. */
 .stage {
-  position: sticky; top: 62px; z-index: 20;
   background: var(--stage);
+  padding-bottom: 12px;
 }
-@media (min-width: 940px) { .stage { top: 76px; } }
 
 .screen {
   position: relative; width: 100%; aspect-ratio: 16 / 9;
@@ -193,219 +279,352 @@ h1, h2, .display {
 }
 .screen iframe, .screen #yt { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .screen .placeholder {
-  position:absolute; inset:0; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:14px; text-align:center; padding: 20px;
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 18px;
   color: var(--muted);
 }
 .screen .placeholder .kicker { color: var(--dim); }
+.screen .placeholder .hint { font-size: 13px; max-width: 30ch; margin: 0; }
 
-/* Barra trasporto */
-.transport {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 4px 4px;
+/* ---- Player: la barra comandi (il "deck") -------------------------------- */
+/* Sul telefono i comandi stanno dove arriva il pollice: in basso, fissi.
+   Il video sta in alto, la scaletta scorre nel mezzo. */
+.deck {
+  position: fixed; z-index: 60;
+  left: 0; right: 0; bottom: 0;
+  padding:
+    12px
+    calc(var(--pad) + var(--safe-r))
+    calc(12px + var(--safe-b))
+    calc(var(--pad) + var(--safe-l));
+  background: rgba(22, 19, 17, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
 }
-.transport .center { display:flex; align-items:center; gap: 10px; }
-.transport .play {
-  width: 56px; height: 56px; border-radius: 999px;
-  background: var(--tungsten); color: #201907; border: none; cursor: pointer;
-  box-shadow: 0 0 22px 0 rgba(255,176,32,.4);
-  display:flex; align-items:center; justify-content:center;
-}
-.transport .play:active { transform: translateY(1px); }
-.transport .now { flex: 1; min-width: 0; }
-.transport .now .n-title {
-  font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.transport .now .n-sub { color: var(--muted); font-size: 12px; font-family: var(--mono); }
 
-/* Barra di avanzamento trascinabile. Pensata prima per il dito, poi per il mouse. */
-.progress {
-  display: flex; align-items: center; gap: 10px;
-  margin: 6px 4px 2px;
-  font-family: var(--mono); font-size: 12px; color: var(--muted);
+.deck-info { display: flex; align-items: baseline; gap: 12px; }
+.deck-info .now { flex: 1; min-width: 0; }
+.deck-info .n-title {
+  font-weight: 600; font-size: 15px; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.deck-info .n-sub {
+  color: var(--muted); font-size: 11px; font-family: var(--mono); line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.deck-info .times {
+  flex: none; font-family: var(--mono); font-size: 12px; color: var(--muted);
   font-variant-numeric: tabular-nums; /* i tempi non ballano mentre scorrono */
 }
-.progress .t { flex: none; min-width: 4.5ch; }
-.progress .t:last-child { text-align: right; }
+.deck-info .times .sep { color: var(--dim); margin: 0 2px; }
 
+.transport {
+  display: flex; align-items: center; justify-content: center; gap: 22px;
+  margin-top: 10px;
+}
+.transport .play {
+  width: 60px; height: 60px; border-radius: 999px;
+  background: var(--tungsten); color: #201907; border: none; cursor: pointer;
+  box-shadow: 0 0 22px 0 rgba(255, 176, 32, .4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.transport .play:active { transform: translateY(1px); filter: brightness(.94); }
+
+/* La firma: il brano che scorre è una lampada che attraversa il bordo alto
+   del deck. La scia accesa dietro il cursore è la stessa luce che in lista
+   illumina la riga attiva. */
 .seek {
   --pct: 0%;
-  flex: 1; min-width: 0;
+  position: absolute;
+  left: 0; right: 0; top: -6px;
+  width: auto;
+  height: 18px; /* presa comoda per il dito; la traccia visibile è di 3px */
   -webkit-appearance: none; appearance: none;
-  background: transparent; cursor: pointer;
-  /* Presa comoda per il dito senza allargare il layout (occupa 16px, come i tempi
-     accanto). Non di più: l'area invisibile sborda sopra e sotto, e a 44px si
-     sarebbe mangiata i tocchi del video e del pulsante play. */
-  height: 34px; margin: -9px 0;
-  /* Senza questo, il trascinamento orizzontale fa scorrere la pagina sul telefono. */
+  background: transparent; cursor: pointer; margin: 0;
+  /* Senza questo il trascinamento orizzontale fa scorrere la pagina. */
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.seek:disabled { cursor: default; opacity: .45; }
+.seek:disabled { cursor: default; }
 
 .seek::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 999px;
+  height: 3px;
   background: linear-gradient(to right, var(--tungsten) var(--pct), var(--line) var(--pct));
 }
 .seek::-moz-range-track {
-  height: 4px; border-radius: 999px;
+  height: 3px;
   background: linear-gradient(to right, var(--tungsten) var(--pct), var(--line) var(--pct));
 }
 
 /* Il cursore è sempre visibile: su touch l'hover non esiste. */
 .seek::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
-  width: 16px; height: 16px; margin-top: -6px;
+  width: 13px; height: 13px; margin-top: -5px;
   border: 0; border-radius: 999px; background: var(--tungsten);
-  box-shadow: 0 0 0 0 rgba(255,176,32,0); transition: box-shadow .12s;
+  box-shadow: 0 0 14px 2px rgba(255, 176, 32, .55);
+  transition: transform .12s;
 }
 .seek::-moz-range-thumb {
-  width: 16px; height: 16px;
+  width: 13px; height: 13px;
   border: 0; border-radius: 999px; background: var(--tungsten);
+  box-shadow: 0 0 14px 2px rgba(255, 176, 32, .55);
 }
-.seek:active::-webkit-slider-thumb { box-shadow: 0 0 0 9px rgba(255,176,32,.22); }
-.seek:active::-moz-range-thumb { box-shadow: 0 0 0 9px rgba(255,176,32,.22); }
+.seek:active::-webkit-slider-thumb { transform: scale(1.5); }
+.seek:active::-moz-range-thumb { transform: scale(1.5); }
 .seek:focus-visible { outline: none; }
-.seek:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(255,176,32,.45); }
-.seek:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 5px rgba(255,176,32,.45); }
-.seek:disabled::-webkit-slider-thumb { background: var(--line); }
-.seek:disabled::-moz-range-thumb { background: var(--line); }
-
-.autoplay-row {
-  display:flex; align-items:center; justify-content: space-between;
-  gap: 10px; padding: 8px 4px 2px; color: var(--muted); font-size: 13px;
-}
-/* -webkit- necessario: su iOS senza prefisso il tocco seleziona l'etichetta. */
-.switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; -webkit-user-select:none; user-select:none; }
-.switch input { position:absolute; opacity:0; }
-.switch .track {
-  width: 38px; height: 22px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s;
-}
-.switch .track::after {
-  content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:999px;
-  background: var(--ink); transition: transform .15s;
-}
-.switch input:checked + .track { background: var(--tungsten); }
-.switch input:checked + .track::after { transform: translateX(16px); background:#201907; }
+.seek:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(255, 176, 32, .45); }
+.seek:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 5px rgba(255, 176, 32, .45); }
+.seek:disabled::-webkit-slider-thumb { background: var(--line); box-shadow: none; }
+.seek:disabled::-moz-range-thumb { background: var(--line); box-shadow: none; }
 
 /* ---- Lista brani (la scaletta vera e propria) ---------------------------- */
 .setlist-head {
-  display:flex; align-items:baseline; justify-content:space-between; gap: 12px;
-  margin: 22px 0 10px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin: 18px 0 8px;
 }
-@media (min-width: 940px) { .setlist-head { margin-top: 0; } }
-.setlist-head h2 { font-size: clamp(28px, 6vw, 40px); }
-.setlist-head .count { font-family: var(--mono); color: var(--muted); font-size: 13px; }
+.setlist-head h2 { font-size: 30px; }
+.setlist-head .count { font-family: var(--mono); color: var(--muted); font-size: 12px; flex: none; }
 
-.setlist { list-style: none; margin: 0; padding: 0 0 90px; }
+/* La riproduzione continua si imposta una volta: sta con la lista, non tra i
+   comandi che si toccano a ogni brano. */
+.listopts {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; min-height: var(--tap);
+  padding: 2px 0 6px; border-bottom: 1px solid var(--line);
+  color: var(--muted); font-size: 14px;
+}
+.listopts .net { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+
+/* -webkit- necessario: su iOS senza prefisso il tocco seleziona l'etichetta. */
+.switch {
+  display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+  min-height: var(--tap); /* si tocca l'etichetta intera, non il cursorino */
+  -webkit-user-select: none; user-select: none;
+}
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .track {
+  width: 40px; height: 24px; border-radius: 999px; background: var(--line);
+  position: relative; transition: background .15s; flex: none;
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  border-radius: 999px; background: var(--ink); transition: transform .15s;
+}
+.switch input:checked + .track { background: var(--tungsten); }
+.switch input:checked + .track::after { transform: translateX(16px); background: #201907; }
+.switch input:focus-visible + .track { outline: 2px solid var(--tungsten); outline-offset: 3px; }
+
+.setlist {
+  list-style: none; margin: 0;
+  /* Spazio per il deck fisso: l'ultimo brano non finisce sotto i comandi. */
+  padding: 0 0 calc(var(--deck-h) + 24px);
+}
 .song {
-  position: relative; display: flex; align-items: center; gap: 14px;
-  padding: 14px 14px 14px 18px; border-radius: 10px; cursor: pointer;
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 13px 12px 13px 16px; border-radius: 10px; cursor: pointer;
   border: 1px solid transparent;
+  scroll-margin-block: 8px;
 }
 .song + .song { border-top: 1px solid var(--line); border-radius: 0; }
-.song:hover { background: var(--riser); }
+.song:active { background: var(--riser); }
 .song .num {
-  font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1;
-  color: var(--dim); min-width: 40px; text-align: right; font-variant-numeric: tabular-nums;
-  transition: color .15s;
+  font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1;
+  color: var(--dim); min-width: 32px; text-align: right; font-variant-numeric: tabular-nums;
+  transition: color .15s; flex: none;
 }
 .song .body { flex: 1; min-width: 0; }
 .song .t {
-  font-weight: 600; font-size: 17px;
+  font-weight: 600; font-size: 16px; line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.song .s { color: var(--muted); font-size: 12px; font-family: var(--mono); margin-top: 2px; }
-.song .dur { font-family: var(--mono); color: var(--dim); font-size: 13px; }
+.song .s {
+  color: var(--muted); font-size: 11px; font-family: var(--mono); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.song .dur {
+  font-family: var(--mono); color: var(--dim); font-size: 12px; flex: none;
+  font-variant-numeric: tabular-nums;
+}
 
-/* Brano attivo: la luce di palco lo illumina */
+/* Brano attivo: la luce di palco lo illumina — la stessa lampada del deck. */
 .song.active {
   background: var(--tungsten-soft);
   border-radius: 10px; border-color: transparent;
 }
 .song.active::before {
-  content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px;
+  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
   background: var(--tungsten); border-radius: 3px;
-  box-shadow: 0 0 16px 1px rgba(255,176,32,.6);
+  box-shadow: 0 0 16px 1px rgba(255, 176, 32, .6);
 }
 .song.active .num { color: var(--tungsten); }
 .song.active .t { color: #fff; }
 .song.played .num { color: var(--muted); }
 
+/* L'alone pulsa con transform e opacity, non con box-shadow: così l'animazione
+   resta sul compositore e non ridipinge a ogni fotogramma. Su un telefono che
+   tiene aperta la scaletta per tutto il concerto è batteria risparmiata. */
 .livedot {
+  position: relative; flex: 0 0 auto;
   width: 9px; height: 9px; border-radius: 999px; background: var(--tungsten);
-  box-shadow: 0 0 0 0 rgba(255,176,32,.6); animation: pulse 1.6s infinite; flex: 0 0 auto;
+}
+.livedot::after {
+  content: ""; position: absolute; inset: 0; border-radius: 999px;
+  background: var(--tungsten);
+  animation: pulse 1.6s infinite;
 }
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255,176,32,.55); }
-  70% { box-shadow: 0 0 0 9px rgba(255,176,32,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,176,32,0); }
+  0% { transform: scale(1); opacity: .55; }
+  70% { transform: scale(3); opacity: 0; }
+  100% { transform: scale(3); opacity: 0; }
 }
+
+.player-foot {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  padding-bottom: calc(var(--deck-h) + 16px);
+}
+.player-foot .btn { flex: 1 1 auto; }
 
 /* ---- Admin --------------------------------------------------------------- */
-.lock { max-width: 380px; margin: 12vh auto; text-align: center; }
+.lock {
+  max-width: 380px; margin: 0 auto; text-align: center;
+  padding: 10vh var(--pad) 40px;
+}
 .lock .mark-lg {
-  width: 42px; height: 42px; border-radius: 6px; margin: 0 auto 18px;
-  background: var(--tungsten); box-shadow: 0 0 28px 4px rgba(255,176,32,.5);
+  width: 40px; height: 40px; border-radius: 6px; margin: 0 auto 16px;
+  background: var(--tungsten); box-shadow: 0 0 28px 4px rgba(255, 176, 32, .5);
 }
-.field { display: block; margin: 14px 0; text-align: left; }
-.field label { display:block; font-family: var(--mono); font-size: 12px; letter-spacing:.12em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-input[type="text"], input[type="password"], input[type="date"], input[type="url"], textarea, select {
-  width: 100%; padding: 12px 14px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--riser); color: var(--ink);
-  font-family: var(--body); font-size: 15px;
+.lock h1 { font-size: 32px; }
+.lock .lead { color: var(--muted); font-size: 15px; }
+.lock .btn { width: 100%; }
+
+/* Una schermata alla volta sul telefono: prima l'elenco, poi l'evento.
+   Su schermo largo le due colonne convivono e data-pane non conta più. */
+.admin-grid {
+  display: grid; grid-template-columns: 1fr; gap: 18px;
+  padding: 16px 0 40px;
 }
-input:focus, textarea:focus, select:focus { outline: 2px solid var(--tungsten); outline-offset: 1px; border-color: transparent; }
-textarea { resize: vertical; min-height: 64px; }
+.admin-grid[data-pane="list"] .pane-editor { display: none; }
+.admin-grid[data-pane="editor"] .pane-list { display: none; }
 
-.admin-grid { display: grid; grid-template-columns: 1fr; gap: 24px; padding: 20px 0 80px; }
-@media (min-width: 900px) { .admin-grid { grid-template-columns: 260px 1fr; align-items: start; } }
+.panel {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--riser); padding: 14px;
+}
+.panel h3 {
+  margin: 0 0 12px; font-family: var(--display); text-transform: uppercase;
+  letter-spacing: .05em; font-size: 19px;
+}
 
-.panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--riser); padding: 16px; }
-.panel h3 { margin: 0 0 12px; font-family: var(--display); text-transform: uppercase; letter-spacing:.05em; font-size: 20px; }
+.pane-list .btn { width: 100%; }
+.pane-list .btn + .btn { margin-top: 8px; }
+.pane-list .evlist { margin-top: 14px; }
 
-.evlist { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.backlink { margin-bottom: 12px; }
+
+.evlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.evlist .none { color: var(--muted); font-size: 14px; padding: 6px 2px; }
+/* Senza hover il tocco non ha anteprima: la riga deve sembrare toccabile da
+   ferma. Stesso vestito delle righe brano, fondo scuro sul pannello chiaro. */
 .evlist li button {
-  width:100%; text-align:left; padding:10px 12px; border-radius:8px;
-  border:1px solid transparent; background: transparent; color: var(--ink); cursor:pointer;
+  width: 100%; text-align: left; min-height: var(--tap);
+  padding: 11px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--stage); color: var(--ink);
+  cursor: pointer; font-size: 15px;
 }
-.evlist li button:hover { background: var(--riser2); }
+.evlist li button:active { background: var(--riser2); }
 .evlist li button.sel { border-color: var(--tungsten); background: var(--tungsten-soft); }
 .evlist .en { font-weight: 600; }
-.evlist .ei { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+.evlist .ei { color: var(--muted); font-size: 12px; font-family: var(--mono); margin-top: 2px; }
 
-.editor .row2 { display:grid; grid-template-columns: 1fr; gap: 12px; }
-@media (min-width: 560px) { .editor .row2 { grid-template-columns: 180px 1fr; } }
+.editor .row2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.editor .row2 .field { margin: 0; }
 
-.adder { display:flex; gap:8px; margin: 8px 0 16px; }
-.adder input { flex:1; }
+.adder { display: flex; gap: 8px; margin: 8px 0 14px; }
+.adder input { flex: 1; min-width: 0; }
+.adder .btn { flex: none; width: var(--tap); padding: 0; font-size: 20px; }
 
-.slist { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.slist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.slist .none { color: var(--muted); font-size: 14px; padding: 6px 2px; }
+
+/* Riga brano: sul telefono sta su due righe, così titolo e comandi hanno
+   entrambi lo spazio per essere toccati. */
 .srow {
-  display:flex; align-items:center; gap: 10px;
-  padding: 10px; border:1px solid var(--line); border-radius: 10px; background: var(--stage);
+  display: grid;
+  grid-template-columns: 24px 26px minmax(0, 1fr);
+  grid-template-areas:
+    "handle idx grow"
+    "handle idx acts";
+  align-items: center; gap: 6px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--stage);
 }
-.srow.dragging { opacity:.5; }
-.srow.dragover { border-color: var(--tungsten); }
-.srow .handle { cursor: grab; color: var(--dim); padding: 4px; touch-action: none; }
-.srow .idx { font-family: var(--display); font-weight:700; font-size: 22px; color: var(--tungsten);
-  min-width: 30px; text-align:right; font-variant-numeric: tabular-nums; }
-.srow .grow { flex:1; min-width:0; }
-.srow .grow .st { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.srow .grow .su { color: var(--muted); font-size:12px; font-family: var(--mono);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.srow .ord { display:flex; flex-direction:column; gap:2px; }
-.srow .ord button { width:30px; height:22px; padding:0; }
+.srow.dragging { opacity: .4; }
+.srow.dragover { border-color: var(--tungsten); box-shadow: 0 0 0 1px var(--tungsten); }
+.srow .handle {
+  grid-area: handle; align-self: stretch;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; color: var(--dim); font-size: 18px;
+  /* Il trascinamento col dito comanda lui, non lo scorrimento della pagina. */
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+}
+.srow .handle:active { color: var(--tungsten); cursor: grabbing; }
+.srow .idx {
+  grid-area: idx;
+  font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--tungsten);
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.srow .grow { grid-area: grow; min-width: 0; }
+.srow .grow .su {
+  color: var(--muted); font-size: 11px; font-family: var(--mono); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* I comandi della riga si toccano, ma non si allargano a tutta la riga:
+   38 brani con tre bottoni giganti a testa sono uno scorrimento infinito. */
+.srow .acts { grid-area: acts; display: flex; gap: 6px; justify-content: flex-end; }
+.srow .acts .btn { flex: none; width: var(--tap); padding: 0; font-size: 12px; }
 
+.editor-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.editor-actions .btn { width: 100%; }
+.editor-actions .wide { grid-column: 1 / -1; }
+.editor-actions .apart {
+  grid-column: 1 / -1; margin-top: 6px; padding-top: 14px;
+  border-top: 1px solid var(--line);
+  /* Elimina non sta accanto alle azioni normali: si tocca per sbaglio. */
+  border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0;
+  justify-content: flex-start;
+}
+.saved-hint {
+  color: var(--dim); font-size: 12px; font-family: var(--mono);
+  padding: 14px 0 0; margin: 0; word-break: break-all;
+}
+.saved-hint a { color: var(--tungsten); }
+
+.note { color: var(--muted); margin: 0; font-size: 15px; }
+
+/* ---- Segnali ------------------------------------------------------------- */
 .toast {
-  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+  position: fixed; left: 50%; bottom: calc(18px + var(--safe-b));
+  transform: translateX(-50%) translateY(20px);
+  max-width: calc(100vw - 32px);
   background: var(--ink); color: #201a12; padding: 12px 18px; border-radius: 999px;
-  font-weight: 600; font-size: 14px; opacity: 0; pointer-events: none;
-  transition: opacity .2s, transform .2s; z-index: 80; box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  font-weight: 600; font-size: 14px; text-align: center; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s; z-index: 80; box-shadow: 0 8px 30px rgba(0, 0, 0, .4);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { background: var(--red); color: #fff; }
+/* Nel player il deck occupa il fondo: il messaggio gli sale sopra. */
+#player:not([hidden]) ~ .toast { bottom: calc(var(--deck-h) + 12px); }
+
+.banner {
+  display: none; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 10px; margin: 12px 0 0;
+  background: rgba(229, 72, 77, .12); border: 1px solid rgba(229, 72, 77, .3);
+  color: #ffb4b6; font-size: 14px;
+}
+.banner.show { display: flex; }
 
 /* Trascinamento di un file .json sulla home (scorciatoia per la prova locale). */
 body.dropping::after {
@@ -417,17 +636,137 @@ body.dropping::after {
   font-family: var(--mono); font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
 }
 
-.banner {
-  display:none; align-items:center; gap:10px;
-  padding:10px 14px; border-radius:10px; margin: 10px 0 0;
-  background: rgba(229,72,77,.12); border:1px solid rgba(229,72,77,.3); color: #ffb4b6; font-size: 14px;
+.foot {
+  color: var(--dim); font-size: 12px; text-align: center;
+  padding: 24px var(--pad) calc(30px + var(--safe-b));
+  font-family: var(--mono);
 }
-.banner.show { display:flex; }
 
-.foot { color: var(--dim); font-size: 12px; text-align:center; padding: 30px 0 40px; font-family: var(--mono); }
+/* ============================================================
+   Hover: solo dove esiste un puntatore.
+   ============================================================ */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--riser2); }
+  .btn.primary:hover { filter: brightness(1.05); background: var(--tungsten); }
+  .btn.wa:hover { filter: brightness(1.03); background: #25d366; }
+  .btn.danger:hover { background: rgba(229, 72, 77, .1); }
+  .iconbtn:hover { background: var(--riser2); }
+  .event-card:hover {
+    border-color: rgba(255, 176, 32, .4); background: var(--riser2); transform: translateY(-1px);
+  }
+  .song:hover { background: var(--riser); }
+  .evlist li button:hover { background: var(--riser2); }
+  .seek:hover::-webkit-slider-thumb { transform: scale(1.2); }
+}
 
+/* ============================================================
+   Da qui in poi: schermi più larghi. Solo aggiunte.
+   ============================================================ */
+
+/* ---- Tablet in verticale / telefoni larghi ------------------------------- */
+@media (min-width: 600px) {
+  :root { --pad: 20px; }
+
+  .hero { padding: 40px 0 22px; }
+  .hero h1 { font-size: 78px; }
+  .hero .sub { font-size: 17px; max-width: 46ch; }
+  .hero .actions .btn { flex: 0 0 auto; }
+
+  .editor .row2 { grid-template-columns: 180px 1fr; }
+
+  /* Riga brano su una riga sola: c'è spazio. */
+  .srow {
+    grid-template-columns: 26px 30px minmax(0, 1fr) auto;
+    grid-template-areas: "handle idx grow acts";
+  }
+  .srow .acts .btn { flex: none; }
+
+  .editor-actions { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .editor-actions .wide { grid-column: auto; }
+
+  .events { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---- Admin a due colonne ------------------------------------------------- */
+@media (min-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 260px minmax(0, 1fr);
+    align-items: start; gap: 24px; padding: 20px 0 60px;
+  }
+  /* Le colonne convivono: la navigazione a schermate non serve più. */
+  .admin-grid[data-pane="list"] .pane-editor,
+  .admin-grid[data-pane="editor"] .pane-list { display: block; }
+  .backlink { display: none; }
+  .panel { padding: 16px; }
+}
+
+/* ---- Player a due colonne ------------------------------------------------ */
+@media (min-width: 940px) {
+  :root { --pad: 28px; --deck-h: 0px; --top-h: 60px; }
+
+  html { scroll-padding-top: calc(var(--top-h) + 16px); scroll-padding-bottom: 24px; }
+
+  .player-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 28px; align-items: start;
+  }
+  /* Due colonne: il video può restare in vista senza rubare righe alla lista. */
+  .stage {
+    position: sticky; top: calc(var(--top-h) + 14px); z-index: 20;
+    padding-bottom: 0;
+  }
+
+  /* Col mouse i comandi tornano sotto al video: la mano è sul puntatore,
+     non sul bordo basso dello schermo. */
+  .deck {
+    position: relative; z-index: auto;
+    left: auto; right: auto; bottom: auto;
+    padding: 16px 0 0;
+    background: transparent; border-top: 0;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  /* Tornata nel flusso la barra vuole una larghezza esplicita: con width:auto
+     un input range prende la sua misura di serie, un moncone di 200px. */
+  .deck .seek { position: static; top: auto; width: 100%; height: 20px; margin: 0 0 10px; }
+  .deck-info .times { font-size: 13px; }
+  .transport { justify-content: flex-start; gap: 14px; margin-top: 12px; }
+  .transport .play { width: 56px; height: 56px; }
+
+  .setlist-head { margin-top: 0; }
+  .setlist-head h2 { font-size: 38px; }
+  .setlist { padding-bottom: 24px; }
+  .player-foot { padding-bottom: 40px; }
+  .player-foot .btn { flex: 0 0 auto; }
+
+  #player:not([hidden]) ~ .toast { bottom: 22px; }
+}
+
+/* ---- Telefono coricato: lo schermo è basso, non alto ---------------------- */
+/* Con 16:9 appiccicato in cima non resterebbe nulla per la scaletta: video a
+   sinistra, lista a destra, comandi in colonna. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .player-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+  .stage { position: static; padding-bottom: 0; }
+  .deck {
+    position: static; padding: 12px 0 0;
+    background: transparent; border-top: 0;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .deck .seek { position: static; top: auto; width: 100%; height: 20px; margin: 0 0 8px; }
+  .transport { justify-content: flex-start; gap: 16px; }
+  .setlist { padding-bottom: 24px; }
+  .player-foot { padding-bottom: 24px; }
+  .hero { padding: 20px 0 14px; }
+  .hero h1 { font-size: 44px; }
+  #player:not([hidden]) ~ .toast { bottom: calc(14px + var(--safe-b)); }
+}
+
+/* ============================================================
+   Accessibilità
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
 }
 
 :focus-visible { outline: 2px solid var(--tungsten); outline-offset: 2px; }

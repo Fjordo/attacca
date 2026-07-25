@@ -1,6 +1,6 @@
 // Service worker: rende l'app apribile e navigabile offline.
 // NB: i VIDEO YouTube richiedono comunque la rete per lo streaming.
-const VERSION = "attacca-v5"; // v5: data e luogo come campi separati
+const VERSION = "attacca-v6"; // v6: interfaccia mobile first (comandi in basso, admin a schermate)
 const SHELL = [
   "/",
   "/admin",

@@ -23,9 +23,9 @@
     <section class="hero">
       <p class="kicker">Studia la scaletta</p>
       <h1>Metti<br />in fila<br />i pezzi.</h1>
-      <p class="sub">Apri un evento: i brani partono in sequenza, uno dopo l'altro, senza toccare nulla. Una volta caricato, tutto gira nel tuo telefono.</p>
+      <p class="sub">Apri un evento e premi Avvia una volta: i brani vanno da soli, uno dopo l'altro. Poi il telefono puoi anche appoggiarlo.</p>
       <div class="actions">
-        <a class="btn primary" href="/admin">Crea / ordina scaletta</a>
+        <a class="btn primary" href="/admin">Crea una scaletta</a>
       </div>
     </section>
 
@@ -36,44 +36,41 @@
   <!-- ============ PLAYER ============ -->
   <main id="player" class="wrap" hidden>
     <div class="player-grid">
-      <!-- Colonna palco: schermo + trasporto -->
+      <!-- Colonna palco: schermo + comandi -->
       <div>
         <div class="stage">
           <div class="screen">
             <div id="yt"></div>
             <div class="placeholder" id="screenPlaceholder">
               <p class="kicker">Pronti</p>
-              <button class="btn primary" id="btnStart">▶ Avvia scaletta</button>
-              <p style="font-size:13px;max-width:34ch">La riproduzione parte al primo tocco (regole del browser). Poi va da sola.</p>
+              <button type="button" class="btn primary" id="btnStart">▶ Avvia scaletta</button>
+              <p class="hint">Il primo tocco lo chiede il browser. Da lì in poi va da sola.</p>
             </div>
           </div>
+        </div>
 
-          <div class="progress">
-            <span class="t" id="timeCur">0:00</span>
-            <input type="range" class="seek" id="seek" min="0" max="0" step="0.1" value="0"
-                   disabled aria-label="Posizione nel brano" />
-            <span class="t" id="timeDur">0:00</span>
-          </div>
+        <!-- Il deck: sul telefono è fissato in basso, dove arriva il pollice.
+             La barra di avanzamento è la luce che ne attraversa il bordo alto. -->
+        <div class="deck">
+          <input type="range" class="seek" id="seek" min="0" max="0" step="0.1" value="0"
+                 disabled aria-label="Posizione nel brano" />
 
-          <div class="transport">
-            <button class="iconbtn" id="btnPrev" title="Precedente" aria-label="Brano precedente">⏮</button>
-            <button class="play" id="btnPlay" title="Play/Pausa" aria-label="Play o pausa">
-              <span id="playGlyph">▶</span>
-            </button>
-            <button class="iconbtn" id="btnNext" title="Successivo" aria-label="Brano successivo">⏭</button>
+          <div class="deck-info">
             <div class="now">
               <div class="n-title" id="nowTitle">—</div>
               <div class="n-sub" id="nowSub"></div>
             </div>
+            <div class="times">
+              <span class="t" id="timeCur">0:00</span><span class="sep">/</span><span class="t" id="timeDur">0:00</span>
+            </div>
           </div>
 
-          <div class="autoplay-row">
-            <label class="switch">
-              <input type="checkbox" id="autoplayToggle" checked />
-              <span class="track"></span>
-              <span>Riproduzione continua</span>
-            </label>
-            <span id="netState"></span>
+          <div class="transport">
+            <button type="button" class="iconbtn" id="btnPrev" title="Precedente" aria-label="Brano precedente">⏮</button>
+            <button type="button" class="play" id="btnPlay" title="Play/Pausa" aria-label="Play o pausa">
+              <span id="playGlyph">▶</span>
+            </button>
+            <button type="button" class="iconbtn" id="btnNext" title="Successivo" aria-label="Brano successivo">⏭</button>
           </div>
         </div>
       </div>
@@ -88,9 +85,20 @@
           </div>
           <span class="count" id="evCount"></span>
         </div>
+
+        <!-- Impostazione, non comando: si tocca una volta e resta lì. -->
+        <div class="listopts">
+          <label class="switch">
+            <input type="checkbox" id="autoplayToggle" checked />
+            <span class="track"></span>
+            <span>Riproduzione continua</span>
+          </label>
+          <span class="net" id="netState"></span>
+        </div>
+
         <ol class="setlist" id="setlist"></ol>
 
-        <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:40px">
+        <div class="player-foot">
           <a class="btn wa" id="btnShare" href="#" target="_blank" rel="noopener">Condividi su WhatsApp</a>
           <a class="btn ghost" href="/">← Tutti gli eventi</a>
         </div>

@@ -9,6 +9,8 @@ const $ = (id) => document.getElementById(id);
 const homeEl = $("home");
 const playerEl = $("player");
 
+const lessMotion = () => !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 const state = {
   event: null,
   local: false,      // true se la lista è stata importata da file (non sul server)
@@ -64,7 +66,7 @@ async function showHome() {
 function renderEventList(list) {
   const listEl = $("eventList");
   if (!list || !list.length) {
-    listEl.innerHTML = `<div class="empty">Ancora nessun evento. Creane uno dall'<a href="/admin" style="color:var(--tungsten)">area Admin</a>.</div>`;
+    listEl.innerHTML = `<div class="empty">Ancora nessun evento. Creane uno dall'<a href="/admin">area Admin</a>.</div>`;
     return;
   }
   listEl.innerHTML = list
@@ -221,8 +223,13 @@ function highlightActive() {
       }
     } else if (dot) dot.remove();
   });
+  // La lista segue il brano in corso. Chi ha chiesto meno animazioni ci arriva
+  // di colpo: lo scorrimento morbido è un'animazione anche se lo chiede il JS,
+  // e il @media del CSS non ferma questa chiamata.
   const active = $("setlist").querySelector(".song.active");
-  if (active && state.started) active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (active && state.started) {
+    active.scrollIntoView({ block: "nearest", behavior: lessMotion() ? "auto" : "smooth" });
+  }
 }
 
 function currentSong() {

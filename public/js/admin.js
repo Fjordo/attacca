@@ -47,10 +47,17 @@ async function refreshList() {
   renderList();
 }
 
+// Sul telefono l'elenco e l'editor sono due schermate: qui si decide quale.
+// Da 900px in su ci pensa il CSS e questo attributo non ha effetto.
+function showPane(quale) {
+  $("adminGrid").dataset.pane = quale;
+}
+$("btnBack").addEventListener("click", () => showPane("list"));
+
 function renderList() {
   const ul = $("evList");
   if (!events.length) {
-    ul.innerHTML = `<li style="color:var(--muted);font-size:14px;padding:6px">Nessun evento.</li>`;
+    ul.innerHTML = `<li class="none">Nessun evento.</li>`;
     return;
   }
   ul.innerHTML = events
@@ -136,6 +143,7 @@ const FIELDS = { fName: "name", fDate: "date", fPlace: "place", fNote: "note" };
 function showEditor() {
   $("editorEmpty").hidden = true;
   $("editor").hidden = false;
+  showPane("editor");
   // Un valore non ISO su <input type="date"> viene rifiutato dal browser e il
   // campo resta vuoto: è quello che vogliamo per gli eventi in vecchio formato.
   for (const [id, prop] of Object.entries(FIELDS)) $(id).value = current[prop] || "";
@@ -155,24 +163,24 @@ Object.entries(FIELDS).forEach(([id, prop]) =>
 function renderSongs() {
   const ul = $("songList");
   if (!current.songs.length) {
-    ul.innerHTML = `<li style="color:var(--muted);font-size:14px;padding:6px 2px">Incolla un link YouTube qui sopra per aggiungere il primo brano.</li>`;
+    ul.innerHTML = `<li class="none">Incolla un link YouTube qui sopra per aggiungere il primo brano.</li>`;
     return;
   }
   ul.innerHTML = current.songs
     .map(
       (s, i) => `
-      <li class="srow" draggable="true" data-i="${i}">
-        <span class="handle" title="Trascina">⠿</span>
+      <li class="srow" data-i="${i}">
+        <span class="handle" title="Trascina per riordinare" aria-hidden="true">⠿</span>
         <span class="idx">${pad2(i + 1)}</span>
         <div class="grow">
           <input class="st-inp" data-i="${i}" value="${escapeHtml(s.title || "")}" placeholder="Titolo del brano" />
           <div class="su">${escapeHtml(s.videoId)}${s.start ? " · da " + s.start + "s" : ""}</div>
         </div>
-        <div class="ord">
-          <button class="btn small" data-up="${i}" title="Su">▲</button>
-          <button class="btn small" data-down="${i}" title="Giù">▼</button>
+        <div class="acts">
+          <button type="button" class="btn small" data-up="${i}" title="Sposta su" aria-label="Sposta su">▲</button>
+          <button type="button" class="btn small" data-down="${i}" title="Sposta giù" aria-label="Sposta giù">▼</button>
+          <button type="button" class="btn small danger" data-del="${i}" title="Rimuovi" aria-label="Rimuovi brano">✕</button>
         </div>
-        <button class="btn small danger" data-del="${i}" title="Rimuovi">✕</button>
       </li>`
     )
     .join("");
@@ -203,28 +211,69 @@ function move(i, dir) {
   renderSongs();
 }
 
-// Drag & drop (desktop). Su mobile restano le frecce ▲▼.
+// Riordino con la maniglia ⠿, dito e mouse sullo stesso percorso.
+// Prima erano gli eventi drag & drop di HTML5, che sul touch non esistono: la
+// maniglia si vedeva ma sul telefono non faceva nulla. Le frecce ▲▼ restano
+// come strada da tastiera.
 function enableDrag(ul) {
-  let from = null;
-  ul.querySelectorAll(".srow").forEach((row) => {
-    row.addEventListener("dragstart", () => {
-      from = +row.getAttribute("data-i");
-      row.classList.add("dragging");
+  ul.querySelectorAll(".handle").forEach((handle) =>
+    handle.addEventListener("pointerdown", startDrag)
+  );
+}
+
+function startDrag(e) {
+  if (e.button > 0) return; // niente trascinamenti col tasto destro
+  e.preventDefault();       // e niente selezione del testo mentre trascini
+
+  const handle = e.currentTarget;
+  const ul = $("songList");
+  const rows = Array.from(ul.querySelectorAll(".srow"));
+  const from = rows.indexOf(handle.closest(".srow"));
+  if (from < 0) return;
+  let to = from;
+
+  handle.setPointerCapture(e.pointerId);
+  rows[from].classList.add("dragging");
+
+  // Durante il trascinamento la lista non si ridisegna: la destinazione la
+  // ricaviamo dalla geometria e la mostriamo col bordo acceso. Lo scambio
+  // vero avviene una volta sola, al rilascio.
+  const onMove = (ev) => {
+    let vicina = from;
+    let dist = Infinity;
+    rows.forEach((r, k) => {
+      const b = r.getBoundingClientRect();
+      const d = Math.abs(ev.clientY - (b.top + b.height / 2));
+      if (d < dist) { dist = d; vicina = k; }
     });
-    row.addEventListener("dragend", () => row.classList.remove("dragging"));
-    row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("dragover"); });
-    row.addEventListener("dragleave", () => row.classList.remove("dragover"));
-    row.addEventListener("drop", (e) => {
-      e.preventDefault();
-      row.classList.remove("dragover");
-      const to = +row.getAttribute("data-i");
-      if (from === null || from === to) return;
+    to = vicina;
+    rows.forEach((r, k) => r.classList.toggle("dragover", k === to && to !== from));
+    edgeScroll(ev.clientY);
+  };
+
+  const onEnd = () => {
+    handle.removeEventListener("pointermove", onMove);
+    handle.removeEventListener("pointerup", onEnd);
+    handle.removeEventListener("pointercancel", onEnd);
+    if (to !== from) {
       const [moved] = current.songs.splice(from, 1);
       current.songs.splice(to, 0, moved);
       dirty = true;
-      renderSongs();
-    });
-  });
+    }
+    renderSongs(); // ridisegna comunque: ripulisce dragging/dragover
+  };
+
+  handle.addEventListener("pointermove", onMove);
+  handle.addEventListener("pointerup", onEnd);
+  handle.addEventListener("pointercancel", onEnd);
+}
+
+// Vicino al bordo la pagina scorre da sé: senza questo una lista più lunga
+// dello schermo non si riordina oltre l'ultima riga visibile.
+function edgeScroll(y) {
+  const bordo = 72;
+  if (y < bordo) window.scrollBy(0, -14);
+  else if (y > window.innerHeight - bordo) window.scrollBy(0, 14);
 }
 
 // Aggiunta brano da link.
@@ -283,7 +332,7 @@ function updateActionLinks() {
   $("btnDelete").style.display = hasId ? "" : "none";
   if (hasId) {
     $("btnPreview").href = `/e/${current.id}`;
-    $("savedHint").innerHTML = `Link da condividere: <a href="${shareUrl(current.id)}" style="color:var(--tungsten)">${shareUrl(current.id)}</a>`;
+    $("savedHint").innerHTML = `Link da condividere: <a href="${shareUrl(current.id)}">${shareUrl(current.id)}</a>`;
   } else {
     $("savedHint").textContent = "Salva l'evento per ottenere il link condivisibile.";
   }
@@ -319,6 +368,7 @@ $("btnDelete").addEventListener("click", async () => {
     current = null;
     $("editor").hidden = true;
     $("editorEmpty").hidden = false;
+    showPane("list");
     await refreshList();
     toast("Evento eliminato");
   } catch (err) {
