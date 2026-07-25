@@ -7,3 +7,11 @@ npm-debug.log
 .gitignore
 .DS_Store
 *.log
+
+# Segreti: il Dockerfile fa COPY . . e un .env finirebbe in un layer
+# dell'immagine, leggibile da chiunque ne abbia una copia anche se il file
+# venisse cancellato dopo. Stessa riga che sta nel .gitignore: le due liste
+# vanno tenute allineate.
+.env
+.env.*
+!.env.example
