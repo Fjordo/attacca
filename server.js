@@ -126,10 +126,14 @@ const LOGIN_MAX_WAIT_MS = 60 * 60 * 1000;
 const tentativi = new Map();                 // ip -> { n, until }
 
 // Dietro il proxy di Fly l'indirizzo del socket è sempre quello del proxy:
-// senza questo tutti finirebbero nello stesso secchiello e basterebbe un
-// estraneo a bloccare la band. Fly-Client-IP lo scrive il proxy, sovrascrivendo
-// quello che manda il client.
-const clientIp = (req) => req.get("fly-client-ip") || req.ip || "sconosciuto";
+// senza distinguere i client tutti finirebbero nello stesso secchiello e
+// basterebbe un estraneo a bloccare la band. Fly-Client-IP lo scrive il proxy
+// sovrascrivendo quello che manda il client — ma questo vale solo se davanti
+// c'è il proxy per davvero: altrove è un header come un altro, che chiunque si
+// inventa a ogni richiesta per ripartire con il contatore azzerato.
+// Quindi va dichiarato: TRUST_PROXY_IP=1, impostato nel fly.toml e solo lì.
+const TRUST_PROXY_IP = process.env.TRUST_PROXY_IP === "1";
+const clientIp = (req) => (TRUST_PROXY_IP && req.get("fly-client-ip")) || req.ip || "sconosciuto";
 
 // Secondi di attesa rimasti, 0 se può provare.
 function loginBloccato(ip) {

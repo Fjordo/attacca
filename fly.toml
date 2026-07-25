@@ -11,6 +11,10 @@ swap_size_mb = 512
 [env]
   PORT = "8080"
   DATA_DIR = "/data"
+  # Qui davanti c'è il proxy di Fly, che riscrive Fly-Client-IP: il server può
+  # fidarsi di quell'header per distinguere i client nel freno ai login. Fuori
+  # da qui l'header non va creduto, quindi la variabile vive solo in questo file.
+  TRUST_PROXY_IP = "1"
 
 # Volume persistente: qui vive events.json, così i dati sopravvivono ai deploy.
 [[mounts]]

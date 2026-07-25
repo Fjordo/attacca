@@ -23,6 +23,7 @@ beforeAll(async () => {
   process.env.NODE_ENV = "production";
   process.env.ADMIN_PASSWORD = PWD;
   process.env.DATA_DIR = dataDir;
+  process.env.TRUST_PROXY_IP = "1"; // come nel fly.toml: i test simulano il proxy
 
   const { app } = await import("../server.js");
   server = app.listen(0);
