@@ -44,8 +44,17 @@ function readAll() {
 }
 function writeAll(list) {
   const tmp = DATA_FILE + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(list, null, 2));
-  fs.renameSync(tmp, DATA_FILE); // scrittura atomica
+  // Il rename è atomico rispetto ai crash del processo, non a quelli della
+  // macchina: senza fsync il sistema può ordinare il rename prima dei dati e
+  // lasciare un events.json vuoto. Su Fly le macchine si fermano da sole.
+  const fd = fs.openSync(tmp, "w");
+  try {
+    fs.writeFileSync(fd, JSON.stringify(list, null, 2));
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, DATA_FILE);
 }
 
 // ---- Utilità -------------------------------------------------------------
@@ -244,6 +253,8 @@ app.use((_req, res, next) => {
   res.setHeader("X-Frame-Options", "DENY"); // per i browser che ignorano frame-ancestors
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  // L'app riproduce video: non le serve nient'altro dell'hardware.
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
   if (IS_PROD) res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
   next();
 });
@@ -373,7 +384,16 @@ app.get(["/", "/e/:id"], (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 app.get("/admin", (_req, res) => {
+  res.setHeader("X-Robots-Tag", "noindex, nofollow");
   res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// Ultimo middleware, e con quattro parametri: è così che Express riconosce un
+// gestore d'errore. Senza, risponde da sé e fuori produzione infila lo stack
+// trace nel corpo della risposta.
+app.use((err, _req, res, _next) => {
+  console.error("Errore non gestito:", err);
+  res.status(500).json({ error: "Errore interno" });
 });
 
 // Si mette in ascolto solo se lanciato davvero (`node server.js`). I test

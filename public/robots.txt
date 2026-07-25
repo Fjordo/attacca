@@ -1,0 +1,4 @@
+# Le scalette sono pubbliche di proposito: chi ha il link deve poterle aprire.
+# L'area riservata invece non ha motivo di stare sui motori di ricerca.
+User-agent: *
+Disallow: /admin

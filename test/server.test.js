@@ -86,7 +86,17 @@ describe("accesso pubblico", () => {
     expect(h.get("x-content-type-options")).toBe("nosniff");
     expect(h.get("x-frame-options")).toBe("DENY");
     expect(h.get("strict-transport-security")).toBeTruthy();
+    expect(h.get("permissions-policy")).toContain("microphone=()");
     expect(h.get("x-powered-by")).toBeNull();
+  });
+
+  it("tiene l'area riservata fuori dai motori di ricerca", async () => {
+    const r = await call("/admin");
+    expect(r.status).toBe(200);
+    expect(r.headers.get("x-robots-tag")).toContain("noindex");
+
+    const robots = await (await call("/robots.txt")).text();
+    expect(robots).toContain("Disallow: /admin");
   });
 });
 
