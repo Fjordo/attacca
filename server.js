@@ -64,6 +64,58 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
+// ---- Sessione admin ------------------------------------------------------
+// Il browser non conserva più la password: dopo il login tiene un token firmato
+// in un cookie HttpOnly, quindi fuori dalla portata del JavaScript di pagina.
+// Il token scade da solo e la firma è derivata dalla password: così sopravvive
+// ai riavvii (su Fly la macchina si ferma quando nessuno la usa) e cambiare
+// password invalida da sola tutte le sessioni aperte.
+const IS_PROD = process.env.NODE_ENV === "production";
+const SESSION_COOKIE = "attacca_session";
+const SESSION_MS = 12 * 60 * 60 * 1000; // 12 ore
+const SESSION_KEY = crypto.createHash("sha256").update(`attacca:session:v1:${ADMIN_PASSWORD}`).digest();
+
+const sign = (payload) => crypto.createHmac("sha256", SESSION_KEY).update(payload).digest("base64url");
+
+function newSession() {
+  const payload = `${Date.now() + SESSION_MS}.${crypto.randomBytes(12).toString("base64url")}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+function validSession(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3) return false;
+  const payload = `${parts[0]}.${parts[1]}`;
+  return safeEqual(parts[2], sign(payload)) && Number(parts[0]) > Date.now();
+}
+
+function readCookie(req, name) {
+  for (const p of String(req.headers.cookie || "").split(";")) {
+    const i = p.indexOf("=");
+    if (i > 0 && p.slice(0, i).trim() === name) return p.slice(i + 1).trim();
+  }
+  return "";
+}
+
+function setSessionCookie(res, value, maxAgeSeconds) {
+  const bits = [`${SESSION_COOKIE}=${value}`, "Path=/", "HttpOnly", "SameSite=Strict", `Max-Age=${maxAgeSeconds}`];
+  if (IS_PROD) bits.push("Secure"); // in locale l'app gira in http e Secure la bloccherebbe
+  res.setHeader("Set-Cookie", bits.join("; "));
+}
+
+// SameSite=Strict basta a impedire che un sito terzo si porti dietro il cookie;
+// questa è la seconda cintura. Le richieste senza Origin (navigazioni dirette,
+// curl) non sono cross-site e passano.
+function sameOrigin(req) {
+  const origin = req.get("origin");
+  if (!origin) return true;
+  try {
+    return new URL(origin).host === req.get("host");
+  } catch {
+    return false;
+  }
+}
+
 const VIDEO_ID = /^[\w-]{11}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -104,20 +156,36 @@ function sanitizeEvent(input, existing = null) {
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
-// Middleware admin: richiede l'header con la password.
+// Middleware admin: richiede una sessione valida, non più la password in chiaro
+// a ogni richiesta.
 function requireAdmin(req, res, next) {
-  const given = req.get("x-admin-password") || "";
-  if (!safeEqual(given, ADMIN_PASSWORD)) {
-    return res.status(401).json({ error: "Password non valida" });
+  if (!sameOrigin(req)) return res.status(403).json({ error: "Origine non consentita" });
+  if (!validSession(readCookie(req, SESSION_COOKIE))) {
+    return res.status(401).json({ error: "Sessione non valida" });
   }
   next();
 }
 
-// Verifica password (usata dalla pagina admin per lo sblocco).
+// Login: l'unico punto in cui la password passa dal client. In cambio si riceve
+// il cookie di sessione, che il JS di pagina non può leggere.
 app.post("/api/login", (req, res) => {
+  if (!sameOrigin(req)) return res.status(403).json({ error: "Origine non consentita" });
   const given = (req.body && req.body.password) || "";
-  if (safeEqual(given, ADMIN_PASSWORD)) return res.json({ ok: true });
-  res.status(401).json({ ok: false });
+  if (!safeEqual(given, ADMIN_PASSWORD)) return res.status(401).json({ ok: false });
+  setSessionCookie(res, newSession(), SESSION_MS / 1000);
+  res.json({ ok: true });
+});
+
+// Dice alla pagina admin se la sessione già aperta vale ancora.
+app.get("/api/session", (req, res) => {
+  if (!validSession(readCookie(req, SESSION_COOKIE))) return res.status(401).json({ ok: false });
+  res.json({ ok: true });
+});
+
+// Esci: butta via il cookie. Serve sul telefono passato di mano.
+app.post("/api/logout", (_req, res) => {
+  setSessionCookie(res, "", 0);
+  res.json({ ok: true });
 });
 
 // Elenco eventi (pubblico, solo dati essenziali per la home).

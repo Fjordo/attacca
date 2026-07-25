@@ -1,29 +1,28 @@
 // Area Admin: crea, ordina, salva e condividi le scalette.
 import {
-  apiLogin, apiListEvents, apiGetEvent, apiCreateEvent, apiUpdateEvent, apiDeleteEvent,
+  apiLogin, apiSession, apiLogout, apiListEvents, apiGetEvent, apiCreateEvent, apiUpdateEvent, apiDeleteEvent,
   apiFetchTitle, parseYouTube, readSetlistFile, pad2, escapeHtml, whatsappUrl, shareUrl, toast,
   fmtWhen, isIsoDate,
 } from "/js/common.js";
 
 const $ = (id) => document.getElementById(id);
-const PWD_KEY = "attacca:pwd";
 
-let password = sessionStorage.getItem(PWD_KEY) || "";
 let events = [];         // elenco (leggero) degli eventi
 let current = null;      // evento in modifica {id?, name, date, place, note, songs[]}
 let dirty = false;
 
 // ---- Login ---------------------------------------------------------------
+// La password non resta da questa parte: al login il server manda un cookie di
+// sessione HttpOnly, che questo codice non può nemmeno leggere. Qui chiediamo
+// solo se quella sessione vale ancora.
 async function boot() {
-  if (password && (await apiLogin(password))) return unlock();
+  if (await apiSession()) return unlock();
   $("lock").hidden = false;
 }
 $("lockForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const pwd = $("pwd").value;
-  if (await apiLogin(pwd)) {
-    password = pwd;
-    sessionStorage.setItem(PWD_KEY, pwd);
+  if (await apiLogin($("pwd").value)) {
+    $("pwd").value = "";
     unlock();
   } else {
     toast("Password non valida", true);
@@ -33,8 +32,41 @@ $("lockForm").addEventListener("submit", async (e) => {
 async function unlock() {
   $("lock").hidden = true;
   $("admin").hidden = false;
+  $("btnLogout").hidden = false;
   await refreshList();
 }
+
+// Sessione scaduta (o revocata cambiando password): si torna al lucchetto senza
+// perdere quello che c'è nell'editor.
+function relock(messaggio) {
+  $("admin").hidden = true;
+  $("btnLogout").hidden = true;
+  $("lock").hidden = false;
+  $("pwd").focus();
+  if (messaggio) toast(messaggio, true);
+}
+
+// Ogni chiamata admin passa di qui: un 401 riporta al login invece di finire
+// in un toast generico.
+async function guard(azione) {
+  try {
+    return await azione();
+  } catch (err) {
+    if (err.status === 401) relock(err.message);
+    else toast(err.message, true);
+    return undefined;
+  }
+}
+
+$("btnLogout").addEventListener("click", async () => {
+  if (dirty && !confirm("Ci sono modifiche non salvate. Uscire comunque?")) return;
+  await apiLogout();
+  current = null;
+  dirty = false;
+  $("editor").hidden = true;
+  $("editorEmpty").hidden = false;
+  relock();
+});
 
 // ---- Elenco eventi -------------------------------------------------------
 async function refreshList() {
@@ -311,18 +343,15 @@ $("btnSave").addEventListener("click", async () => {
     note: current.note,
     songs: current.songs,
   };
-  try {
-    const saved = current.id
-      ? await apiUpdateEvent(current.id, payload, password)
-      : await apiCreateEvent(payload, password);
-    current = normalizeCurrent(saved);
-    dirty = false;
-    await refreshList();
-    showEditor();
-    toast("Scaletta salvata");
-  } catch (err) {
-    toast(err.message, true);
-  }
+  const saved = await guard(() =>
+    current.id ? apiUpdateEvent(current.id, payload) : apiCreateEvent(payload)
+  );
+  if (!saved) return;
+  current = normalizeCurrent(saved);
+  dirty = false;
+  await refreshList();
+  showEditor();
+  toast("Scaletta salvata");
 });
 
 function updateActionLinks() {
@@ -363,17 +392,13 @@ $("btnExport").addEventListener("click", () => {
 $("btnDelete").addEventListener("click", async () => {
   if (!current.id) return;
   if (!confirm(`Eliminare "${current.name}"? L'operazione non è reversibile.`)) return;
-  try {
-    await apiDeleteEvent(current.id, password);
-    current = null;
-    $("editor").hidden = true;
-    $("editorEmpty").hidden = false;
-    showPane("list");
-    await refreshList();
-    toast("Evento eliminato");
-  } catch (err) {
-    toast(err.message, true);
-  }
+  if (!(await guard(() => apiDeleteEvent(current.id)))) return;
+  current = null;
+  $("editor").hidden = true;
+  $("editorEmpty").hidden = false;
+  showPane("list");
+  await refreshList();
+  toast("Evento eliminato");
 });
 
 window.addEventListener("beforeunload", (e) => {

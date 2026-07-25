@@ -100,6 +100,13 @@ copre i modi in cui il lettore si bloccava a metà scaletta — player che non e
 Il volume montato su `/data` conserva `events.json` tra un deploy e l'altro.
 La password admin è un *secret*, non finisce nel codice.
 
+## Come funziona l'accesso admin
+
+La password si inserisce una volta sola, su `/admin`. In cambio il server manda un
+cookie di sessione `HttpOnly` che dura 12 ore: il JavaScript della pagina non può
+leggerlo e la password non viene conservata dal browser. *Esci* chiude la sessione
+subito; cambiare `ADMIN_PASSWORD` invalida da sé tutte quelle ancora aperte.
+
 ## Punto 3 del brief — ordine suggerito da un modello (per il futuro)
 
 Per ora l'ordine lo decide l'admin. Il codice è già predisposto: la scaletta è una

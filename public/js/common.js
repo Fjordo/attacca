@@ -162,10 +162,21 @@ export async function apiFetchTitle(videoId) {
   }
 }
 
-// Chiamate admin: la password viaggia in un header.
-export function adminHeaders(password) {
-  return { "Content-Type": "application/json", "x-admin-password": password };
+// Chiamate admin: dopo il login l'autorizzazione viaggia nel cookie di sessione,
+// che il browser allega da sé. La password non viene più conservata da questa
+// parte e non passa più a ogni richiesta.
+export const SESSION_SCADUTA = "Sessione scaduta: rientra con la password";
+
+async function adminFetch(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { "Content-Type": "application/json" } });
+  if (r.status === 401 || r.status === 403) {
+    const e = new Error(SESSION_SCADUTA);
+    e.status = 401;
+    throw e;
+  }
+  return r;
 }
+
 export async function apiLogin(password) {
   const r = await fetch("/api/login", {
     method: "POST",
@@ -174,25 +185,29 @@ export async function apiLogin(password) {
   });
   return r.ok;
 }
-export async function apiCreateEvent(ev, password) {
-  const r = await fetch("/api/events", { method: "POST", headers: adminHeaders(password), body: JSON.stringify(ev) });
-  if (r.status === 401) throw new Error("Password non valida");
+// C'è già una sessione aperta? Evita di richiedere la password a ogni ricarica.
+export async function apiSession() {
+  try {
+    return (await fetch("/api/session")).ok;
+  } catch {
+    return false;
+  }
+}
+export async function apiLogout() {
+  try { await fetch("/api/logout", { method: "POST" }); } catch {}
+}
+export async function apiCreateEvent(ev) {
+  const r = await adminFetch("/api/events", { method: "POST", body: JSON.stringify(ev) });
   if (!r.ok) throw new Error("Salvataggio non riuscito");
   return r.json();
 }
-export async function apiUpdateEvent(id, ev, password) {
-  const r = await fetch(`/api/events/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    headers: adminHeaders(password),
-    body: JSON.stringify(ev),
-  });
-  if (r.status === 401) throw new Error("Password non valida");
+export async function apiUpdateEvent(id, ev) {
+  const r = await adminFetch(`/api/events/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(ev) });
   if (!r.ok) throw new Error("Salvataggio non riuscito");
   return r.json();
 }
-export async function apiDeleteEvent(id, password) {
-  const r = await fetch(`/api/events/${encodeURIComponent(id)}`, { method: "DELETE", headers: adminHeaders(password) });
-  if (r.status === 401) throw new Error("Password non valida");
+export async function apiDeleteEvent(id) {
+  const r = await adminFetch(`/api/events/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!r.ok) throw new Error("Eliminazione non riuscita");
   return r.json();
 }

@@ -113,7 +113,6 @@ export async function mountAdmin({ events = [] } = {}) {
 
   localStorage.clear();
   sessionStorage.clear();
-  sessionStorage.setItem("attacca:pwd", "segreta"); // così boot() sblocca senza passare dal form
 
   const store = events.map((e) => ({ ...e, songs: e.songs || [] }));
   const salvati = [];   // payload arrivati al server finto
@@ -129,7 +128,10 @@ export async function mountAdmin({ events = [] } = {}) {
       const metodo = (opts.method || "GET").toUpperCase();
       const body = opts.body ? JSON.parse(opts.body) : null;
 
-      if (u.includes("/api/login")) return res({ ok: true });
+      // Sessione già aperta: boot() sblocca senza passare dal form, come quando
+      // il browser ha ancora il cookie del login precedente.
+      if (u.includes("/api/session")) return res({ ok: true });
+      if (u.includes("/api/login") || u.includes("/api/logout")) return res({ ok: true });
       if (u.includes("/api/oembed")) return res({ title: "" });
 
       const m = u.match(/\/api\/events\/([^/?]+)/);

@@ -1,6 +1,6 @@
 // Service worker: rende l'app apribile e navigabile offline.
 // NB: i VIDEO YouTube richiedono comunque la rete per lo streaming.
-const VERSION = "attacca-v6"; // v6: interfaccia mobile first (comandi in basso, admin a schermate)
+const VERSION = "attacca-v7"; // v7: sessione admin via cookie, /api/session mai in cache
 const SHELL = [
   "/",
   "/admin",
@@ -32,6 +32,10 @@ self.addEventListener("fetch", (e) => {
 
   // Solo GET sullo stesso dominio.
   if (req.method !== "GET" || url.origin !== location.origin) return;
+
+  // Stato della sessione: mai dalla cache. Una risposta "sei dentro" servita
+  // offline sbloccherebbe l'interfaccia admin senza che il server confermi nulla.
+  if (url.pathname === "/api/session") return;
 
   // API eventi: rete prima, poi cache (per vedere sempre l'ultima versione se online).
   if (url.pathname.startsWith("/api/")) {
