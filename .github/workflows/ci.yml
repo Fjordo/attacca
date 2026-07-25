@@ -1,0 +1,58 @@
+name: CI
+
+# Dependabot apre da solo le PR di aggiornamento: senza questo workflow
+# nessuno le verifica prima del merge, e l'automazione aumenta il rischio
+# invece di ridurlo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Sola lettura: al workflow basta il codice, non deve poter scrivere sul repo.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # Le vulnerabilità note delle dipendenze di produzione fermano la PR.
+      # Le devDependencies non finiscono nell'immagine: restano fuori.
+      - name: Audit delle dipendenze di produzione
+        run: npm audit --omit=dev --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Il build non veniva mai provato prima del deploy: un errore
+      # nell'immagine si scopriva su Fly, non qui.
+      - name: Build dell'immagine
+        run: docker build -t attacca:ci .
+
+      - name: Il container parte e non gira come root
+        run: |
+          docker run -d --name attacca-ci -e ADMIN_PASSWORD=test-ci -p 8080:8080 attacca:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/ >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://localhost:8080/ >/dev/null
+          # Il proprietario di /proc/1, non `id`: docker exec parte come utente
+          # dell'immagine (root), mentre qui interessa chi esegue il server.
+          utente=$(docker exec attacca-ci stat -c %U /proc/1)
+          echo "il server gira come: $utente"
+          test "$utente" = "node"
+          docker rm -f attacca-ci
