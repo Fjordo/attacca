@@ -7,7 +7,7 @@ import express from "express";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 8080;
@@ -358,4 +358,10 @@ app.get("/admin", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
-app.listen(PORT, () => console.log(`Attacca in ascolto su http://localhost:${PORT}`));
+// Si mette in ascolto solo se lanciato davvero (`node server.js`). I test
+// importano questo file e aprono la porta da sé, su una porta a caso.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  app.listen(PORT, () => console.log(`Attacca in ascolto su http://localhost:${PORT}`));
+}
+
+export { app };

@@ -67,11 +67,16 @@ npm test          # una passata
 npm run test:watch
 ```
 
-Girano con **Vitest** su **jsdom**: i test caricano il vero `index.html` e i veri
-moduli di `public/js/`, e fingono solo la IFrame API di YouTube (che non è
-riproducibile fuori dal browser). La parte più importante è `test/player.test.js`:
-copre i modi in cui il lettore si bloccava a metà scaletta — player che non emette
-`onError`, fine brano, salti annullati, pausa dell'utente.
+Girano con **Vitest**. I test dell'interfaccia stanno su **jsdom**: caricano il
+vero `index.html` e i veri moduli di `public/js/`, e fingono solo la IFrame API di
+YouTube (che non è riproducibile fuori dal browser). La parte più importante è
+`test/player.test.js`: copre i modi in cui il lettore si bloccava a metà scaletta —
+player che non emette `onError`, fine brano, salti annullati, pausa dell'utente.
+
+`test/server.test.js` gira invece in ambiente node: apre il server vero su una
+porta a caso e lo interroga via HTTP, con `NODE_ENV=production` perché è la
+configurazione che va in rete. Copre login, integrità e scadenza del token di
+sessione, difesa CSRF, freno ai tentativi e il giro completo di un evento.
 
 ## Deploy su Fly.io
 
