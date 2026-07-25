@@ -143,7 +143,12 @@ describe("integrità del token di sessione", () => {
 
   // Deve restare allineata a SESSION_KEY in server.js: se la derivazione della
   // chiave cambia, questo test lo dice invece di lasciarlo scoprire in rete.
-  const chiave = crypto.createHash("sha256").update(`attacca:session:v1:${PWD}`).digest();
+  const chiave = crypto.scryptSync(PWD, "attacca:session:v2", 32, {
+    N: 2 ** 15,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
+  });
   const firma = (payload) => crypto.createHmac("sha256", chiave).update(payload).digest("base64url");
   const token = (scadenza) => {
     const payload = `${scadenza}.${crypto.randomBytes(12).toString("base64url")}`;

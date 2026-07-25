@@ -1,6 +1,6 @@
 {
   "name": "attacca",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "App web per far studiare e riprodurre la scaletta a una band. Playlist YouTube in sequenza, riproduzione continua lato client, condivisione via WhatsApp.",
   "type": "module",
   "private": true,

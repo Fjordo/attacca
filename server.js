@@ -74,7 +74,18 @@ function safeEqual(a, b) {
 const IS_PROD = process.env.NODE_ENV === "production";
 const SESSION_COOKIE = "attacca_session";
 const SESSION_MS = 12 * 60 * 60 * 1000; // 12 ore
-const SESSION_KEY = crypto.createHash("sha256").update(`attacca:session:v1:${ADMIN_PASSWORD}`).digest();
+// La chiave si deriva con scrypt e non con un SHA-256 secco. Un token è
+// pubblico quanto il portatile su cui sta — HttpOnly lo nasconde al
+// JavaScript, non ai DevTools — e chi ne ha uno può provare password offline,
+// dove il freno sui tentativi non arriva. Con un digest solo sono ~10^9
+// tentativi al secondo su GPU e una password scelta a mano cade in poche ore;
+// con scrypt sono ~10^3. Il conto lo paghiamo una volta, ~50 ms all'avvio.
+const SESSION_KEY = crypto.scryptSync(ADMIN_PASSWORD, "attacca:session:v2", 32, {
+  N: 2 ** 15,
+  r: 8,
+  p: 1,
+  maxmem: 64 * 1024 * 1024,
+});
 
 const sign = (payload) => crypto.createHmac("sha256", SESSION_KEY).update(payload).digest("base64url");
 
