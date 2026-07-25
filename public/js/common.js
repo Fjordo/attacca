@@ -177,13 +177,22 @@ async function adminFetch(url, opts = {}) {
   return r;
 }
 
+// Ritorna { ok } oppure { ok: false, error } — il server frena i tentativi
+// ripetuti e in quel caso dice quanto aspettare, che è un messaggio diverso da
+// "password sbagliata".
 export async function apiLogin(password) {
   const r = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
   });
-  return r.ok;
+  if (r.ok) return { ok: true };
+  if (r.status === 429) {
+    const d = await r.json().catch(() => ({}));
+    const minuti = Math.max(1, Math.ceil((d.retryAfter || 900) / 60));
+    return { ok: false, error: `Troppi tentativi. Riprova tra ${minuti} minuti.` };
+  }
+  return { ok: false, error: "Password non valida" };
 }
 // C'è già una sessione aperta? Evita di richiedere la password a ogni ricarica.
 export async function apiSession() {

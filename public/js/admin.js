@@ -21,11 +21,12 @@ async function boot() {
 }
 $("lockForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (await apiLogin($("pwd").value)) {
+  const esito = await apiLogin($("pwd").value);
+  if (esito.ok) {
     $("pwd").value = "";
     unlock();
   } else {
-    toast("Password non valida", true);
+    toast(esito.error, true);
   }
 });
 

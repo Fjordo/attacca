@@ -103,6 +103,48 @@ function setSessionCookie(res, value, maxAgeSeconds) {
   res.setHeader("Set-Cookie", bits.join("; "));
 }
 
+// ---- Freno ai tentativi di login -----------------------------------------
+// L'accesso è un unico segreto scelto a mano: senza un freno una wordlist lo
+// trova in poche ore, e non se ne accorge nessuno perché i tentativi falliti
+// non lasciano traccia. Contatore in memoria per IP: basta, perché la macchina
+// è una sola e perdere i conteggi a ogni riavvio non è un problema.
+const LOGIN_MAX = 10;                        // fallimenti tollerati nella finestra
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_WAIT_MS = 60 * 60 * 1000;
+const tentativi = new Map();                 // ip -> { n, until }
+
+// Dietro il proxy di Fly l'indirizzo del socket è sempre quello del proxy:
+// senza questo tutti finirebbero nello stesso secchiello e basterebbe un
+// estraneo a bloccare la band. Fly-Client-IP lo scrive il proxy, sovrascrivendo
+// quello che manda il client.
+const clientIp = (req) => req.get("fly-client-ip") || req.ip || "sconosciuto";
+
+// Secondi di attesa rimasti, 0 se può provare.
+function loginBloccato(ip) {
+  const t = tentativi.get(ip);
+  if (!t) return 0;
+  if (Date.now() > t.until) {
+    tentativi.delete(ip);
+    return 0;
+  }
+  return t.n >= LOGIN_MAX ? Math.ceil((t.until - Date.now()) / 1000) : 0;
+}
+
+function loginFallito(ip) {
+  if (tentativi.size > 500) {
+    for (const [k, v] of tentativi) if (Date.now() > v.until) tentativi.delete(k);
+  }
+  const t = tentativi.get(ip);
+  const n = (t && Date.now() <= t.until ? t.n : 0) + 1;
+  // Superata la soglia l'attesa raddoppia a ogni tentativo, fino a un'ora.
+  const attesa =
+    n < LOGIN_MAX
+      ? LOGIN_WINDOW_MS
+      : Math.min(LOGIN_WINDOW_MS * 2 ** (n - LOGIN_MAX), LOGIN_MAX_WAIT_MS);
+  tentativi.set(ip, { n, until: Date.now() + attesa });
+  if (n === LOGIN_MAX) console.warn(`⚠  ${LOGIN_MAX} login falliti da ${ip}: bloccato.`);
+}
+
 // SameSite=Strict basta a impedire che un sito terzo si porti dietro il cookie;
 // questa è la seconda cintura. Le richieste senza Origin (navigazioni dirette,
 // curl) non sono cross-site e passano.
@@ -170,8 +212,22 @@ function requireAdmin(req, res, next) {
 // il cookie di sessione, che il JS di pagina non può leggere.
 app.post("/api/login", (req, res) => {
   if (!sameOrigin(req)) return res.status(403).json({ error: "Origine non consentita" });
+
+  const ip = clientIp(req);
+  if (loginBloccato(ip)) {
+    loginFallito(ip); // insistere allunga l'attesa invece di lasciarla scorrere
+    const attesa = loginBloccato(ip);
+    res.setHeader("Retry-After", String(attesa));
+    return res.status(429).json({ ok: false, retryAfter: attesa });
+  }
+
   const given = (req.body && req.body.password) || "";
-  if (!safeEqual(given, ADMIN_PASSWORD)) return res.status(401).json({ ok: false });
+  if (!safeEqual(given, ADMIN_PASSWORD)) {
+    loginFallito(ip);
+    return res.status(401).json({ ok: false });
+  }
+
+  tentativi.delete(ip); // rientrato: il conto riparte da zero
   setSessionCookie(res, newSession(), SESSION_MS / 1000);
   res.json({ ok: true });
 });
