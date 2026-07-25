@@ -109,11 +109,6 @@
   <p class="foot">Attacca · setlist della band · Made by Fjordo</p>
 
   <script src="/js/player.js" type="module"></script>
-  <script>
-    // Registra il service worker per l'uso offline (app shell + font + icone).
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
-    }
-  </script>
+  <script src="/js/sw-register.js"></script>
 </body>
 </html>

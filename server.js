@@ -196,6 +196,39 @@ function sanitizeEvent(input, existing = null) {
 
 // ---- App -----------------------------------------------------------------
 const app = express();
+app.disable("x-powered-by"); // niente "Express" in ogni risposta
+
+// ---- Intestazioni di sicurezza -------------------------------------------
+// Poche righe invece di helmet: qui le dipendenze si contano sulle dita.
+// La CSP elenca esattamente i host di YouTube che servono al player (l'API
+// iframe tira giù il resto da s.ytimg.com); tutto il resto vive sul proprio
+// dominio. È anche il paracadute se un domani entra una injection in innerHTML:
+// senza connect-src verso l'esterno, non c'è dove portare la refurtiva.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' https://www.youtube.com https://s.ytimg.com",
+  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  "img-src 'self' https://i.ytimg.com data:",
+  "style-src 'self'",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+app.use((_req, res, next) => {
+  res.setHeader("Content-Security-Policy", CSP);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY"); // per i browser che ignorano frame-ancestors
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  if (IS_PROD) res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  next();
+});
+
 app.use(express.json({ limit: "1mb" }));
 
 // Middleware admin: richiede una sessione valida, non più la password in chiaro

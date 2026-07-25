@@ -1,6 +1,6 @@
 // Service worker: rende l'app apribile e navigabile offline.
 // NB: i VIDEO YouTube richiedono comunque la rete per lo streaming.
-const VERSION = "attacca-v7"; // v7: sessione admin via cookie, /api/session mai in cache
+const VERSION = "attacca-v8"; // v8: CSP, registrazione del SW in un file suo
 const SHELL = [
   "/",
   "/admin",
@@ -8,6 +8,7 @@ const SHELL = [
   "/js/common.js",
   "/js/player.js",
   "/js/admin.js",
+  "/js/sw-register.js",
   "/manifest.webmanifest",
   "/fonts/bc-600.woff2",
   "/fonts/bc-700.woff2",
