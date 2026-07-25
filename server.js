@@ -57,11 +57,12 @@ function newId(n = 8) {
   return s;
 }
 
+// Confronto a tempo costante. Si confrontano i digest e non le stringhe: sono
+// sempre lunghi 32 byte, quindi il ritorno anticipato su lunghezze diverse —
+// che rivelava quanto è lunga la password — non serve più.
 function safeEqual(a, b) {
-  const ba = Buffer.from(String(a));
-  const bb = Buffer.from(String(b));
-  if (ba.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ba, bb);
+  const digest = (v) => crypto.createHash("sha256").update(String(v)).digest();
+  return crypto.timingSafeEqual(digest(a), digest(b));
 }
 
 // ---- Sessione admin ------------------------------------------------------
