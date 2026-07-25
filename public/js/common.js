@@ -90,14 +90,19 @@ export function normalizeImported(data) {
   let place = "";
   let note = "";
   let rawSongs = [];
+  // Il file lo scrive una persona a mano: i campi vanno presi solo se sono del
+  // tipo giusto. Un name che è un oggetto arrivava intatto fino all'editor, e
+  // lì il primo .trim() spegneva il salvataggio senza spiegare perché.
+  const testo = (v, sennò = "") => (typeof v === "string" ? v.trim() : sennò);
+
   if (Array.isArray(data)) {
     rawSongs = data;
   } else if (data && typeof data === "object") {
-    name = data.name || name;
+    name = testo(data.name, name) || name;
     date = isIsoDate(data.date) ? data.date : "";
-    place = typeof data.place === "string" ? data.place.trim() : "";
-    note = data.note || "";
-    rawSongs = data.songs || data.list || [];
+    place = testo(data.place);
+    note = testo(data.note);
+    rawSongs = Array.isArray(data.songs) ? data.songs : Array.isArray(data.list) ? data.list : [];
   }
   const songs = [];
   rawSongs.forEach((item, i) => {
@@ -108,7 +113,7 @@ export function normalizeImported(data) {
     if (!p) return;
     songs.push({
       id: "i" + i,
-      title: (item && item.title) || "",
+      title: testo(item && item.title),
       url: url || `https://youtu.be/${p.videoId}`,
       videoId: p.videoId,
       start: p.start || 0,

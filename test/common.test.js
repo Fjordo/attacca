@@ -149,6 +149,26 @@ describe("normalizeImported", () => {
     expect(normalizeImported({}).songs).toEqual([]);
     expect(normalizeImported("boh").songs).toEqual([]);
   });
+
+  // Un file con i campi del tipo sbagliato arrivava intatto fino all'editor, e
+  // lì il primo .trim() su quello che credeva una stringa spegneva il salvataggio.
+  it("restituisce sempre stringhe, qualunque cosa ci sia nel file", () => {
+    const ev = normalizeImported({
+      name: { non: "una stringa" },
+      note: [1, 2],
+      place: 42,
+      songs: [`https://youtu.be/${ID}`],
+    });
+    expect(typeof ev.name).toBe("string");
+    expect(typeof ev.note).toBe("string");
+    expect(typeof ev.place).toBe("string");
+    expect(() => ev.name.trim()).not.toThrow(); // è ciò che fa btnSave
+  });
+
+  it("tiene il titolo del brano solo se è una stringa", () => {
+    const ev = normalizeImported({ songs: [{ videoId: ID, title: { oggetto: true } }] });
+    expect(ev.songs[0].title).toBe("");
+  });
 });
 
 describe("readSetlistFile", () => {
