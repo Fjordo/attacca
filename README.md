@@ -100,6 +100,10 @@ copre i modi in cui il lettore si bloccava a metà scaletta — player che non e
 Il volume montato su `/data` conserva `events.json` tra un deploy e l'altro.
 La password admin è un *secret*, non finisce nel codice.
 
+Il server gira come utente `node`, non come root: `docker-entrypoint.sh` parte da
+root solo per dare al volume appena montato il proprietario giusto, poi scende di
+privilegi ed esegue il `CMD`.
+
 ## Come funziona l'accesso admin
 
 La password si inserisce una volta sola, su `/admin`. In cambio il server manda un

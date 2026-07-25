@@ -1,0 +1,5 @@
+# Su Windows git converte i fine riga in CRLF al checkout. Dentro il container
+# uno script con "#!/bin/sh\r" non parte: questi file restano LF ovunque.
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
