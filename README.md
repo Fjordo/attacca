@@ -6,7 +6,7 @@ Un amministratore ordina i brani e condivide la scaletta con un link (via WhatsA
 ## Cosa fa
 
 - **Riproduzione continua**: apri un evento, premi *Avvia* una volta, e i brani partono uno dopo l'altro nell'ordine impostato. Avanzamento automatico, con pulsanti precedente / play-pausa / successivo e tocco su un brano per saltarci.
-- **Gira lato client**: una volta caricata la lista, la logica di riproduzione è tutta nel browser. L'app è una PWA installabile e apribile offline.
+- **Gira lato client**: una volta caricata la lista, la logica di riproduzione è tutta nel browser. L'app è una PWA installabile e apribile offline: un banner in home la propone, e su iPhone — dove il prompt di installazione non esiste — spiega il gesto da fare a mano.
 - **Admin**: crea eventi, aggiungi brani incollando i link YouTube (il titolo viene recuperato in automatico), riordina con trascinamento o frecce, salva.
 - **Condivisione**: pulsante *Condividi su WhatsApp*; il link porta a `/e/<id>`, cioè a quell'evento pronto da riprodurre.
 - **Import/Export JSON**: la scaletta è un semplice JSON. Da Admin, *Esporta JSON* la scarica e *Carica lista da file* la rimette nell'editor come bozza: niente viene scritto sul server finché non premi *Salva*, che crea sempre un evento **nuovo** senza toccare quelli esistenti.
@@ -22,6 +22,7 @@ public/
   js/common.js     parsing YouTube, API, cache offline
   js/player.js     player con avanzamento automatico
   js/admin.js      editor e riordino
+  js/install.js    invito all'installazione (banner, iOS, prompt Chromium)
   css/styles.css   tema "palco/tungsten"
   sw.js            service worker (offline)
 test/              test automatici (Vitest + jsdom)

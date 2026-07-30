@@ -76,3 +76,13 @@ describe("markup dell'invito all'installazione", () => {
     expect(leggi("index.html")).toContain("/js/install.js");
   });
 });
+
+describe("service worker", () => {
+  it("mette il modulo dell'invito nella shell offline", () => {
+    expect(leggi("sw.js")).toContain('"/js/install.js"');
+  });
+
+  it("ha cambiato versione: senza il bump la cache vecchia non prende il file nuovo", () => {
+    expect(leggi("sw.js")).toContain('attacca-v9');
+  });
+});
