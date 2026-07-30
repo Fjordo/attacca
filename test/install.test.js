@@ -154,3 +154,46 @@ describe("l'invito nel player", () => {
     expect(visibile("btnInstallPlayer")).toBe(false);
   });
 });
+
+describe("percorso iOS", () => {
+  it("invita subito, senza aspettare un evento che non arriverà mai", async () => {
+    await mountInstall({ ios: true });
+    expect(visibile("installBanner")).toBe(true);
+  });
+
+  it("al tocco spiega il gesto invece di aprire un prompt che non esiste", async () => {
+    const app = await mountInstall({ ios: true });
+
+    $("btnInstallBanner").click();
+    await app.flush();
+
+    expect($("installDialog").open).toBe(true);
+  });
+
+  it("il pannello si chiude", async () => {
+    const app = await mountInstall({ ios: true });
+    $("btnInstallBanner").click();
+    await app.flush();
+
+    $("btnInstallClose").click();
+    await app.flush();
+
+    expect($("installDialog").open).toBe(false);
+  });
+
+  it("tace se l'app è già sulla schermata Home", async () => {
+    await mountInstall({ ios: true, standalone: true });
+    expect(visibile("installBanner")).toBe(false);
+    expect(visibile("installFoot")).toBe(false);
+  });
+
+  it("anche su iOS lo scarto ritira il banner nel pulsantino in fondo", async () => {
+    const app = await mountInstall({ ios: true });
+
+    $("btnInstallDismiss").click();
+    await app.flush();
+
+    expect(visibile("installBanner")).toBe(false);
+    expect(visibile("installFoot")).toBe(true);
+  });
+});

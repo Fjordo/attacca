@@ -20,6 +20,13 @@ const $ = (id) => document.getElementById(id);
 const banner = $("installBanner");
 const inFondo = $("installFoot");
 const nelPlayer = $("btnInstallPlayer");
+const pannello = $("installDialog");
+
+// iPadOS si spaccia per Mac: l'unico indizio che lo tradisce è il touch su una
+// piattaforma che da scrivania non ne ha.
+const isIOS =
+  /iP(hone|od|ad)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 const SCARTO = "attacca:install-dismissed";
 
@@ -53,7 +60,11 @@ function mostra(attivo) {
 }
 
 async function chiedi() {
-  if (!differito) return;
+  // Su iOS non arriverà mai un evento: si può solo spiegare il gesto.
+  if (!differito) {
+    if (isIOS) pannello?.showModal();
+    return;
+  }
   const evento = differito;
   differito = null; // monouso: riusarlo lancia
   evento.prompt();
@@ -84,3 +95,8 @@ $("btnInstallDismiss")?.addEventListener("click", () => {
   scarta();
   mostra(true); // non sparisce: si ritira nel pulsantino in fondo
 });
+
+$("btnInstallClose")?.addEventListener("click", () => pannello?.close());
+
+// iOS non emetterà mai beforeinstallprompt: se siamo lì, l'invito parte subito.
+if (isIOS && !installata()) mostra(true);
