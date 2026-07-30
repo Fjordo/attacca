@@ -18,6 +18,18 @@
 const $ = (id) => document.getElementById(id);
 
 const banner = $("installBanner");
+const inFondo = $("installFoot");
+
+const SCARTO = "attacca:install-dismissed";
+
+// localStorage può lanciare (Safari in navigazione privata, quota piena):
+// senza memoria l'invito resta quello di partenza e non si rompe niente.
+const scartato = () => {
+  try { return localStorage.getItem(SCARTO) !== null; } catch { return false; }
+};
+const scarta = () => {
+  try { localStorage.setItem(SCARTO, "1"); } catch { /* pazienza */ }
+};
 
 // L'evento messo da parte da Chromium. È monouso: dopo prompt() non vale più.
 let differito = null;
@@ -27,9 +39,14 @@ const installata = () =>
   window.matchMedia?.("(display-mode: standalone)").matches === true ||
   navigator.standalone === true;
 
-/** Accende gli inviti o li spegne tutti. */
+/**
+ * Accende gli inviti o li spegne tutti.
+ * In home banner e pulsantino si escludono: il primo finché non lo scarti, il
+ * secondo da lì in poi.
+ */
 function mostra(attivo) {
-  if (banner) banner.hidden = !attivo;
+  if (banner) banner.hidden = !(attivo && !scartato());
+  if (inFondo) inFondo.hidden = !(attivo && scartato());
 }
 
 async function chiedi() {
@@ -37,7 +54,10 @@ async function chiedi() {
   const evento = differito;
   differito = null; // monouso: riusarlo lancia
   evento.prompt();
-  await evento.userChoice;
+  const { outcome } = await evento.userChoice;
+  // Ha detto no al dialogo vero del sistema: segnale più forte del chiudere il
+  // banner, quindi alla visita dopo si parte già dal pulsantino in fondo.
+  if (outcome === "dismissed") scarta();
   // L'evento è speso: meglio nessun invito che uno che non fa più niente.
   mostra(false);
 }
@@ -54,3 +74,10 @@ window.addEventListener("appinstalled", () => {
 });
 
 $("btnInstallBanner")?.addEventListener("click", chiedi);
+
+$("btnInstallHome")?.addEventListener("click", chiedi);
+
+$("btnInstallDismiss")?.addEventListener("click", () => {
+  scarta();
+  mostra(true); // non sparisce: si ritira nel pulsantino in fondo
+});

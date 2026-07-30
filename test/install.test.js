@@ -75,3 +75,48 @@ describe("percorso Chromium", () => {
     expect(visibile("installFoot")).toBe(false);
   });
 });
+
+describe("lo scarto del banner", () => {
+  it("non fa sparire l'invito: lo ritira nel pulsantino in fondo", async () => {
+    const app = await mountInstall();
+    app.offri();
+    await app.flush();
+
+    $("btnInstallDismiss").click();
+    await app.flush();
+
+    expect(visibile("installBanner")).toBe(false);
+    expect(visibile("installFoot")).toBe(true);
+  });
+
+  it("sopravvive a un ricaricamento: si riparte dal pulsantino, non dal banner", async () => {
+    const app = await mountInstall({ scartato: true });
+    app.offri();
+    await app.flush();
+
+    expect(visibile("installBanner")).toBe(false);
+    expect(visibile("installFoot")).toBe(true);
+  });
+
+  it("dal pulsantino in fondo si installa comunque", async () => {
+    const app = await mountInstall({ scartato: true });
+    const e = app.offri();
+    await app.flush();
+
+    $("btnInstallHome").click();
+    await app.flush();
+
+    expect(e.prompt).toHaveBeenCalledTimes(1);
+  });
+
+  it("dire no al dialogo vero conta più che chiudere il banner: la volta dopo parte in piccolo", async () => {
+    const app = await mountInstall();
+    app.offri("dismissed");
+    await app.flush();
+
+    $("btnInstallBanner").click();
+    await app.flush();
+
+    expect(localStorage.getItem("attacca:install-dismissed")).not.toBeNull();
+  });
+});
