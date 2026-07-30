@@ -6,6 +6,13 @@
   <title>Attacca</title>
   <meta name="description" content="La scaletta della band: riproduci la lista di brani YouTube in sequenza, senza interruzioni." />
   <meta name="theme-color" content="#161311" />
+  <!-- iOS 16.4+ legge display dal manifest; sotto, l'unico segnale è il meta
+       apple-. Il nome senza prefisso è quello standard di oggi: teniamo
+       entrambi finché in giro ci sono iPhone vecchi. -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!-- Coerente con viewport-fit=cover e le safe-area già gestite nel CSS. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />

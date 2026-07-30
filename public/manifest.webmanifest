@@ -1,11 +1,13 @@
 {
+  "id": "/",
   "name": "Attacca — Setlist",
   "short_name": "Attacca",
   "description": "La setlist della band: riproduci i brani YouTube in sequenza, senza interruzioni.",
+  "lang": "it",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#161311",
   "theme_color": "#161311",
   "icons": [

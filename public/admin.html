@@ -6,6 +6,13 @@
   <title>Admin · Attacca</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#161311" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- iOS 16.4+ legge display dal manifest; sotto, l'unico segnale è il meta
+       apple-. Il nome senza prefisso è quello standard di oggi: teniamo
+       entrambi finché in giro ci sono iPhone vecchi. -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="stylesheet" href="/css/styles.css" />
@@ -96,5 +103,6 @@
   </main>
 
   <script src="/js/admin.js" type="module"></script>
+  <script src="/js/sw-register.js"></script>
 </body>
 </html>
