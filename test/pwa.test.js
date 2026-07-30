@@ -71,4 +71,8 @@ describe("markup dell'invito all'installazione", () => {
       );
     }
   });
+
+  it("carica il modulo dell'invito", () => {
+    expect(leggi("index.html")).toContain("/js/install.js");
+  });
 });
