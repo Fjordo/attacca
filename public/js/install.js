@@ -67,13 +67,19 @@ async function chiedi() {
   }
   const evento = differito;
   differito = null; // monouso: riusarlo lancia
-  evento.prompt();
-  const { outcome } = await evento.userChoice;
-  // Ha detto no al dialogo vero del sistema: segnale più forte del chiudere il
-  // banner, quindi alla visita dopo si parte già dal pulsantino in fondo.
-  if (outcome === "dismissed") scarta();
-  // L'evento è speso: meglio nessun invito che uno che non fa più niente.
-  mostra(false);
+  // prompt() può lanciare (InvalidStateError, gesto utente perso) e userChoice
+  // può rifiutare: senza il finally il banner resterebbe con un bottone morto,
+  // perché differito è già null e mostra(false) non verrebbe mai chiamato.
+  try {
+    evento.prompt();
+    const { outcome } = await evento.userChoice;
+    // Ha detto no al dialogo vero del sistema: segnale più forte del chiudere il
+    // banner, quindi alla visita dopo si parte già dal pulsantino in fondo.
+    if (outcome === "dismissed") scarta();
+  } finally {
+    // L'evento è speso: meglio nessun invito che uno che non fa più niente.
+    mostra(false);
+  }
 }
 
 window.addEventListener("beforeinstallprompt", (e) => {

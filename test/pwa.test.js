@@ -77,6 +77,12 @@ describe("markup dell'invito all'installazione", () => {
   });
 });
 
+describe("cascata di `hidden`", () => {
+  it("rende definitivo il `hidden`: senza questa regola una classe con display lo scavalca", () => {
+    expect(leggi("css/styles.css")).toMatch(/\[hidden\]\s*\{[^}]*display:\s*none\s*!important/);
+  });
+});
+
 describe("service worker", () => {
   it("mette il modulo dell'invito nella shell offline", () => {
     expect(leggi("sw.js")).toContain('"/js/install.js"');

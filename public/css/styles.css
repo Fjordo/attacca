@@ -64,6 +64,12 @@
 
 * { box-sizing: border-box; }
 
+/* Il `hidden` dell'HTML vive solo nel foglio del browser, e una qualunque
+   regola d'autore che dichiari `display` lo scavalca — le regole d'autore
+   battono lo user-agent a prescindere dalla specificità. Qui lo rendiamo
+   definitivo, perché l'intero stato degli inviti si scrive su quell'attributo. */
+[hidden] { display: none !important; }
+
 html {
   /* Margini per scrollIntoView: senza questi il brano attivo finisce dietro la
      topbar appiccicata o sotto il deck fisso. */

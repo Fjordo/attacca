@@ -109,6 +109,20 @@ describe("lo scarto del banner", () => {
     expect(e.prompt).toHaveBeenCalledTimes(1);
   });
 
+  it("scartato e poi installato dal pulsantino in fondo, nella stessa visita: l'evento non si è perso per strada", async () => {
+    const app = await mountInstall();
+    const e = app.offri();
+    await app.flush();
+
+    $("btnInstallDismiss").click();
+    await app.flush();
+
+    $("btnInstallHome").click();
+    await app.flush();
+
+    expect(e.prompt).toHaveBeenCalledTimes(1);
+  });
+
   it("dire no al dialogo vero conta più che chiudere il banner: la volta dopo parte in piccolo", async () => {
     const app = await mountInstall();
     app.offri("dismissed");
