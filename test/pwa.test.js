@@ -50,3 +50,25 @@ describe("meta per iOS", () => {
     });
   }
 });
+
+describe("markup dell'invito all'installazione", () => {
+  it("ha tutti gli elementi dell'invito", () => {
+    const html = leggi("index.html");
+    for (const id of [
+      "installBanner", "btnInstallBanner", "btnInstallDismiss",
+      "installFoot", "btnInstallHome", "btnInstallPlayer",
+      "installDialog", "btnInstallClose",
+    ]) {
+      expect(html, `manca #${id}`).toContain(`id="${id}"`);
+    }
+  });
+
+  it("parte tutto spento: a scoprirlo è install.js, solo dove si può installare", () => {
+    const html = leggi("index.html");
+    for (const id of ["installBanner", "installFoot", "btnInstallPlayer"]) {
+      expect(html, `#${id} deve nascere hidden`).toMatch(
+        new RegExp(`id="${id}"[^>]*\\shidden`)
+      );
+    }
+  });
+});

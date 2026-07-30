@@ -486,6 +486,41 @@ textarea { resize: vertical; min-height: 72px; }
 }
 .player-foot .btn { flex: 1 1 auto; }
 
+/* ---- Invito all'installazione -------------------------------------------- */
+/* Il banner apre la home; una volta scartato non sparisce, si ritira nel
+   pulsantino in fondo. L'app resta installabile con un tocco, solo più in
+   piccolo: "smetti di gridare", non "mai più". */
+.install-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 14px 0 0; padding: 10px 12px;
+  border: 1px solid rgba(255, 176, 32, .35); border-radius: var(--radius);
+  background: var(--tungsten-soft);
+}
+/* Va a capo prima dei bottoni invece di strizzarli sotto il bersaglio minimo. */
+.install-banner .ib-text { flex: 1 1 16ch; font-size: 14px; line-height: 1.35; }
+/* Resta un .iconbtn a grandezza piena: qui il bersaglio non si rimpicciolisce,
+   è la stessa regola di .btn.small poco sopra. */
+.install-banner .ib-close {
+  flex: none; border-color: transparent; background: transparent;
+  color: var(--muted); font-size: 20px;
+}
+
+.install-foot { display: flex; justify-content: center; padding-bottom: 40px; }
+
+/* Il pannello col gesto iOS. <dialog> nativo: focus trap ed Esc senza
+   scrivere accessibilità a mano. */
+.ios-sheet {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--riser); color: var(--ink);
+  padding: 20px; max-width: 34ch; width: calc(100vw - 32px);
+}
+.ios-sheet::backdrop { background: rgba(0, 0, 0, .6); }
+.ios-sheet h2 { font-size: 26px; margin-bottom: 12px; }
+.ios-sheet ol { margin: 0 0 18px; padding-left: 1.2em; color: var(--muted); font-size: 15px; }
+.ios-sheet li + li { margin-top: 8px; }
+.ios-sheet b { color: var(--ink); font-weight: 600; }
+.ios-sheet .btn { width: 100%; }
+
 /* ---- Admin --------------------------------------------------------------- */
 .lock {
   max-width: 380px; margin: 0 auto; text-align: center;
