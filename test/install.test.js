@@ -120,3 +120,37 @@ describe("lo scarto del banner", () => {
     expect(localStorage.getItem("attacca:install-dismissed")).not.toBeNull();
   });
 });
+
+describe("l'invito nel player", () => {
+  it("c'è, perché chi arriva da un link WhatsApp la home non la vede mai", async () => {
+    const app = await mountInstall({ vista: "player" });
+    app.offri();
+    await app.flush();
+
+    expect(visibile("btnInstallPlayer")).toBe(true);
+  });
+
+  it("non risente dello scarto del banner: quello riguarda solo la home", async () => {
+    const app = await mountInstall({ vista: "player", scartato: true });
+    app.offri();
+    await app.flush();
+
+    expect(visibile("btnInstallPlayer")).toBe(true);
+  });
+
+  it("al tocco apre il prompt vero", async () => {
+    const app = await mountInstall({ vista: "player" });
+    const e = app.offri();
+    await app.flush();
+
+    $("btnInstallPlayer").click();
+    await app.flush();
+
+    expect(e.prompt).toHaveBeenCalledTimes(1);
+  });
+
+  it("resta spento se il browser non offre l'installazione", async () => {
+    await mountInstall({ vista: "player" });
+    expect(visibile("btnInstallPlayer")).toBe(false);
+  });
+});

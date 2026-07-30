@@ -19,6 +19,7 @@ const $ = (id) => document.getElementById(id);
 
 const banner = $("installBanner");
 const inFondo = $("installFoot");
+const nelPlayer = $("btnInstallPlayer");
 
 const SCARTO = "attacca:install-dismissed";
 
@@ -42,11 +43,13 @@ const installata = () =>
 /**
  * Accende gli inviti o li spegne tutti.
  * In home banner e pulsantino si escludono: il primo finché non lo scarti, il
- * secondo da lì in poi.
+ * secondo da lì in poi. Nel player c'è sempre il suo, perché chi arriva da un
+ * link WhatsApp la home potrebbe non vederla mai.
  */
 function mostra(attivo) {
   if (banner) banner.hidden = !(attivo && !scartato());
   if (inFondo) inFondo.hidden = !(attivo && scartato());
+  if (nelPlayer) nelPlayer.hidden = !attivo;
 }
 
 async function chiedi() {
@@ -73,9 +76,9 @@ window.addEventListener("appinstalled", () => {
   mostra(false);
 });
 
-$("btnInstallBanner")?.addEventListener("click", chiedi);
-
-$("btnInstallHome")?.addEventListener("click", chiedi);
+for (const b of [$("btnInstallBanner"), $("btnInstallHome"), nelPlayer]) {
+  b?.addEventListener("click", chiedi);
+}
 
 $("btnInstallDismiss")?.addEventListener("click", () => {
   scarta();
