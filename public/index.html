@@ -6,6 +6,13 @@
   <title>Attacca</title>
   <meta name="description" content="La scaletta della band: riproduci la lista di brani YouTube in sequenza, senza interruzioni." />
   <meta name="theme-color" content="#161311" />
+  <!-- iOS 16.4+ legge display dal manifest; sotto, l'unico segnale è il meta
+       apple-. Il nome senza prefisso è quello standard di oggi: teniamo
+       entrambi finché in giro ci sono iPhone vecchi. -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!-- Coerente con viewport-fit=cover e le safe-area già gestite nel CSS. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -20,6 +27,14 @@
 
   <!-- ============ HOME ============ -->
   <main id="home" class="wrap" hidden>
+    <!-- Nessun browser propone l'installazione in modo affidabile, quindi la
+         proponiamo noi. Lo scopre js/install.js, e solo se si può davvero
+         installare. Scartato, il banner si ritira in #installFoot qui sotto. -->
+    <div class="install-banner" id="installBanner" hidden>
+      <span class="ib-text">Installa Attacca: si apre come un'app, anche senza rete.</span>
+      <button type="button" class="btn primary small" id="btnInstallBanner">Installa</button>
+      <button type="button" class="iconbtn ib-close" id="btnInstallDismiss" aria-label="Non ora">×</button>
+    </div>
     <section class="hero">
       <p class="kicker">Studia la scaletta</p>
       <h1>Metti<br />in fila<br />i pezzi.</h1>
@@ -31,6 +46,12 @@
 
     <div class="section-label">Eventi</div>
     <div id="eventList" class="events"></div>
+
+    <!-- Dove si ritira il banner una volta scartato: l'app resta installabile
+         con un tocco, solo più in piccolo e più in basso. -->
+    <div class="install-foot" id="installFoot" hidden>
+      <button type="button" class="btn ghost small" id="btnInstallHome">Installa l'app</button>
+    </div>
   </main>
 
   <!-- ============ PLAYER ============ -->
@@ -101,6 +122,7 @@
         <div class="player-foot">
           <a class="btn wa" id="btnShare" href="#" target="_blank" rel="noopener">Condividi su WhatsApp</a>
           <a class="btn ghost" href="/">← Tutti gli eventi</a>
+          <button type="button" class="btn ghost" id="btnInstallPlayer" hidden>Installa l'app</button>
         </div>
       </div>
     </div>
@@ -108,7 +130,20 @@
 
   <p class="foot">Attacca · setlist della band · Made by Fjordo</p>
 
+  <!-- Su iOS il prompt di installazione non esiste e non esisterà: l'unica
+       strada è il gesto, e se non glielo spieghiamo noi non lo scopre nessuno. -->
+  <dialog class="ios-sheet" id="installDialog">
+    <h2>Aggiungi Attacca alla Home</h2>
+    <ol>
+      <li>Sei dentro WhatsApp, Instagram o un'altra app? Tocca <b>⋯</b> e scegli <b>Apri in Safari</b>, poi ricomincia da qui.</li>
+      <li>Tocca <b>Condividi</b> nella barra del browser.</li>
+      <li>Scorri e scegli <b>Aggiungi alla schermata Home</b>, poi conferma con <b>Aggiungi</b>.</li>
+    </ol>
+    <button type="button" class="btn primary" id="btnInstallClose">Ho capito</button>
+  </dialog>
+
   <script src="/js/player.js" type="module"></script>
+  <script src="/js/install.js" type="module"></script>
   <script src="/js/sw-register.js"></script>
 </body>
 </html>

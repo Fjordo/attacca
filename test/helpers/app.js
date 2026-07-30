@@ -198,3 +198,82 @@ export async function loadPlayer() {
 }
 
 export const $ = (id) => document.getElementById(id);
+
+/**
+ * Monta il markup reale di index.html e carica /js/install.js.
+ *
+ * `vista` sceglie quale schermata è accesa: index.html le tiene entrambe hidden
+ * e a scoprirle è player.js, che qui non gira.
+ *
+ * L'url di jsdom è fissato a /e/test in vitest.config.js — cioè il player — ma
+ * install.js non legge il percorso: guarda solo il `hidden` dei due <main>, che
+ * qui impostiamo a mano.
+ */
+export async function mountInstall({
+  vista = "home",
+  standalone = false,
+  ios = false,
+  scartato = false,
+} = {}) {
+  const html = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
+  document.body.innerHTML = html
+    .match(/<body[^>]*>([\s\S]*)<\/body>/i)[1]
+    .replace(/<script[\s\S]*?<\/script>/gi, ""); // i moduli li importiamo noi
+
+  localStorage.clear();
+  if (scartato) localStorage.setItem("attacca:install-dismissed", "1");
+
+  document.getElementById("home").hidden = vista !== "home";
+  document.getElementById("player").hidden = vista !== "player";
+
+  // jsdom ha matchMedia ma non valuta le query: risponde sempre matches:false,
+  // che è già lo stato "non installata". Per il caso opposto va sostituito.
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: standalone })));
+
+  // Sostituiamo navigator intero invece di scrivere sulle sue proprietà, che
+  // sono getter di sola lettura: unstubGlobals in vitest.config.js lo rimette
+  // a posto da sé dopo ogni test.
+  vi.stubGlobal("navigator", {
+    userAgent: ios
+      ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+      : "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+    platform: ios ? "iPhone" : "Linux armv8l",
+    maxTouchPoints: 5,
+    standalone: false,
+  });
+
+  // jsdom non definisce affatto showModal/close su HTMLDialogElement (non è
+  // che li implementi a vuoto: proprio non ci sono, vi.spyOn su un metodo
+  // assente lancia) — li aggiungiamo noi prima di spiarli, così restano due
+  // spie che segnino l'apertura, lo stesso trucco usato per il clic di export.
+  if (!HTMLDialogElement.prototype.showModal) HTMLDialogElement.prototype.showModal = function () {};
+  if (!HTMLDialogElement.prototype.close) HTMLDialogElement.prototype.close = function () {};
+  vi.spyOn(HTMLDialogElement.prototype, "showModal").mockImplementation(function () {
+    this.open = true;
+  });
+  vi.spyOn(HTMLDialogElement.prototype, "close").mockImplementation(function () {
+    this.open = false;
+  });
+
+  vi.resetModules();
+  await import("/js/install.js");
+  await flush();
+
+  return {
+    flush,
+    /** Simula Chromium che offre l'installazione. Ritorna l'evento. */
+    offri(outcome = "accepted") {
+      // cancelable:true perché il vero BeforeInstallPromptEvent lo è: senza,
+      // il preventDefault() di install.js non lascerebbe traccia da verificare.
+      const e = new Event("beforeinstallprompt", { cancelable: true });
+      e.prompt = vi.fn();
+      e.userChoice = Promise.resolve({ outcome });
+      window.dispatchEvent(e);
+      return e;
+    },
+    /** Simula il sistema che segnala l'installazione avvenuta. */
+    installazioneAvvenuta() {
+      window.dispatchEvent(new Event("appinstalled"));
+    },
+  };
+}
