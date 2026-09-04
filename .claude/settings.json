@@ -1,0 +1,10 @@
+{
+    "permissions": {
+        "deny": [
+            "Read(*-credentials.txt)",
+            "Edit(*-credentials.txt)",
+            "Write(*-credentials.txt)",
+            "Bash(**-credentials.txt*)"
+        ]
+    }
+}

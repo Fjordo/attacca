@@ -31,3 +31,6 @@ desktop.ini
 tmp/
 *.tmp
 __pycache__/
+
+# Custom
+*-credentials.txt
